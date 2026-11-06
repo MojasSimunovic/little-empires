@@ -52,7 +52,7 @@ for(let x=-7;x<=7;x++)for(let z=-7;z<=7;z++){
   const topMat=mat(grassColor);
   const top=box(group,tileSize*.995,.14,tileSize*.995,topMat,0,height,0);top.castShadow=false;
   const actualY=height+.07;
-  const hit=addMesh(group,new THREE.PlaneGeometry(tileSize*.97,tileSize*.97),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}),0,actualY+.017,0,false);
+  const hit=addMesh(group,new THREE.PlaneGeometry(tileSize*.97,tileSize*.97),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}),0,actualY+.017,0,false);
   hit.rotation.x=-Math.PI/2;hit.userData={x,z};tiles.push(hit);
   const deco=new THREE.Group();deco.position.y=actualY;group.add(deco);
   if(!edge && (x*x+z*z)>5 && seedRand(x,z,5)>.62){tree(deco,(seedRand(x,z,6)-.5)*.6,(seedRand(x,z,7)-.5)*.6,.62+seedRand(x,z,8)*.38);}
