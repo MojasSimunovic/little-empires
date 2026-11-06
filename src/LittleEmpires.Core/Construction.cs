@@ -41,6 +41,7 @@ public sealed class Settlement
     private readonly List<Building> _buildings = new();
     public IReadOnlyList<Building> Buildings => _buildings;
     public int Population { get; private set; }
+    public int Happiness { get; private set; }
 
     // The founding residents already have homes, but no spare housing.
     public int StartingHousingCapacity { get; }
@@ -49,11 +50,22 @@ public sealed class Settlement
             .Sum(building => building.Definition.HousingCapacity));
     public int AvailableHousing => Math.Max(0, HousingCapacity - Population);
 
-    public Settlement(int population = 0)
+    public Settlement(int population = 0, int happiness = 70)
     {
         if (population < 0) throw new ArgumentOutOfRangeException(nameof(population));
+        if (happiness < 0 || happiness > 100)
+            throw new ArgumentOutOfRangeException(nameof(happiness),
+                "Happiness must be between 0 and 100.");
         StartingHousingCapacity = population;
         Population = population;
+        Happiness = happiness;
+    }
+
+    internal int AdjustHappiness(int amount)
+    {
+        var before = Happiness;
+        Happiness = (int)Math.Clamp((long)Happiness + amount, 0L, 100L);
+        return Happiness - before;
     }
 
     // Primarily for scenario setup; regular population growth uses AcceptImmigrants.
