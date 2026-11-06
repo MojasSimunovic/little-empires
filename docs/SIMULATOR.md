@@ -14,7 +14,13 @@ The default is **8 seasons** (two years). Optionally pass a number of seasons fr
 dotnet run --project src/LittleEmpires.Simulator -- 12
 ```
 
-The GitHub Actions workflow builds and executes the default scenario even if you cannot install .NET locally. Open the latest `C# Core CI` run, select the job, and expand **Run eight-season economy scenario** to view the printed report.
+To run the new **housing and immigration** scenario, use:
+
+```bash
+dotnet run --project src/LittleEmpires.Simulator -- growth 8
+```
+
+The GitHub Actions workflow builds and executes **both** scenarios even if you cannot install .NET locally. Open the latest `C# Core CI` run, select the job, and expand **Run eight-season economy scenario** or **Run eight-season housing and immigration scenario** to view the printed report.
 
 ## Default scenario
 
@@ -41,10 +47,31 @@ The GitHub Actions workflow builds and executes the default scenario even if you
 
 Expected final stockpile: **26 wood, 25 stone, 30 food, 55 coins**. Expected final date: **Spring, Year 3**. These values are asserted in the smoke tests.
 
+## Housing and immigration scenario (LE-016)
+
+- Starts with **8 residents / 8 housing slots**, **30 food**, **80 wood**, **25 stone**, **100 coins**.
+- Builds a **Cottage** and **Fishery** on turn 1, then a **Farm** on turn 2.
+- Cottage adds **6 housing slots** when complete, bringing the cap to **14 residents**.
+- Up to **2 new residents** arrive each season, provided there's housing and at least one food surplus per immigrant after current residents eat. New residents eat starting next season.
+- The existing default economy scenario has **no extra housing**, so its population stays at 8 and its expected balances are unchanged.
+
+| Turn | Season | End population | Housing cap | End food | Immigrants |
+|---:|---|---:|---:|---:|---:|
+| 1 | Spring, Year 1 | 10 | 14 | 22 | 2 |
+| 2 | Summer, Year 1 | 12 | 14 | 17 | 2 |
+| 3 | Autumn, Year 1 | 14 | 14 | 10 | 2 |
+| 4 | Winter, Year 1 | 14 | 14 | 10 | 0 |
+| 5 | Spring, Year 2 | 14 | 14 | 10 | 0 |
+| 6 | Summer, Year 2 | 14 | 14 | 10 | 0 |
+| 7 | Autumn, Year 2 | 14 | 14 | 10 | 0 |
+| 8 | Winter, Year 2 | 14 | 14 | 10 | 0 |
+
+Expected final stockpile: **25 wood, 12 stone, 10 food, 70 coins**. Six immigrants in total; no food shortages. These are deterministic, provisional test expectations.
+
 ## Current limitations
 
-- No map or terrain, worker assignments, housing, trade, or AI rivals.
-- Food shortages are reported but do not reduce population.
+- No map or terrain, worker assignments, advanced housing upgrades, trade, or AI rivals.
+- Food shortages are reported but do not reduce population. Food security uses a simple one-surplus-food-per-newcomer rule, not a forecast of next season's needs.
 - Building production and consumption are currently constant across seasons.
 - The scenario is scripted rather than an autonomous economic AI.
 - Starting values are provisional; use reports to tune balance after playtesting.
