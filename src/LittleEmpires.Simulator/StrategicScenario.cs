@@ -76,7 +76,10 @@ internal static class StrategicScenario
                 $"Food {inventory.Get(Resource.Food),3} " +
                 $"Coins {inventory.Get(Resource.Coins),3} " +
                 $"| Tax +{turn.TaxIncome} / Upkeep -{turn.OperatingCosts} " +
-                $"| Staffed {turn.WorkingResidents}/{turn.StartingPopulation}");
+                $"| Staffed {turn.WorkingResidents}/{turn.StartingPopulation} " +
+                $"| Output W:{turn.GrossProduction.GetValueOrDefault(Resource.Wood)} " +
+                $"S:{turn.GrossProduction.GetValueOrDefault(Resource.Stone)} " +
+                $"F:{turn.GrossProduction.GetValueOrDefault(Resource.Food)}");
 
             if (i == 2 && seasons > 3)
             {
