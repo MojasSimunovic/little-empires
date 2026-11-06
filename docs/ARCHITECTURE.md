@@ -11,9 +11,11 @@ Unity 6 is the target engine. The core simulation is written in plain C# without
 - Newly completed buildings start producing in the **following** season.
 - Production from completed buildings is resolved before advancing construction.
 - The first slice uses wood, stone, food, and coins.
-- The turn pipeline is: existing-building production → existing residents consume food → construction progress → happiness update → immigration → calendar advancement → turn summary.
+- The turn pipeline is: existing-building production → existing residents consume food → construction and upgrade progress → happiness update → immigration → calendar advancement → turn summary.
 - Food consumption is one food per resident per season. Food shortages are reported but do not change population yet.
 - Starting residents are assumed housed; new housing capacity comes from completed Cottages. Each Cottage adds 6 housing slots.
+- Completed Cottages can be upgraded **in place** to Townhouses (12 housing slots total). Upgrades take two seasons, are paid upfront, and retain the original housing capacity until completion. Townhouses cannot be directly constructed.
+- Scripted upgrades use the current building list index as a temporary identifier; future world entities will have persistent IDs.
 - Up to 2 immigrants arrive after construction each season if there is spare housing, no food shortage, sufficient food surplus, and adequate happiness. They eat beginning the following season.
 - Happiness (0–100, starts at 70) rises modestly with food security and spare housing, and falls sharply after food shortages. Immigration requires happiness ≥50; 50–69 allows at most 1 newcomer, 70+ allows at most 2.
 - Building definitions and provisional balance values live in `BuildingCatalog` (see [BUILDINGS.md](BUILDINGS.md)).
