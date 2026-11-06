@@ -1,5 +1,9 @@
 using LittleEmpires.Core;
 
+if (args.Length > 0 && string.Equals(args[0], "strategic", StringComparison.OrdinalIgnoreCase))
+    return StrategicScenario.Run(args.Skip(1).ToArray());
+
+
 // Usage: [seasons], growth [seasons], happiness [seasons], upgrade [seasons].
 var growthMode = args.Length > 0 &&
     string.Equals(args[0], "growth", StringComparison.OrdinalIgnoreCase);
@@ -21,6 +25,8 @@ if (args.Length > seasonsArgIndex + 1 ||
         "   or: dotnet run --project src/LittleEmpires.Simulator -- happiness [seasons: 1..80]");
     Console.Error.WriteLine(
         "   or: dotnet run --project src/LittleEmpires.Simulator -- upgrade [seasons: 1..80]");
+    Console.Error.WriteLine(
+        "   or: dotnet run --project src/LittleEmpires.Simulator -- strategic [seasons: 1..80]");
     return 1;
 }
 
