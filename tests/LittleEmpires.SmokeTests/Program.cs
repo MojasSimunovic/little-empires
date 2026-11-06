@@ -507,4 +507,135 @@ Check(townhouseScenarioVillage.Buildings.Count == 3 &&
       townhouseScenarioVillage.Buildings[0].Definition.Id == BuildingCatalog.TownhouseId,
     "Scripted upgrade does not duplicate the original Cottage");
 
+
+var sitesToVerify = new[]
+{
+    BuildingCatalog.QuarryId,
+    BuildingCatalog.LumberCampId,
+    BuildingCatalog.FisheryId,
+    BuildingCatalog.FarmId,
+    BuildingCatalog.CottageId
+};
+foreach (var size in new[] { (Width: 9, Height: 9), (Width: 13, Height: 13),
+                           (Width: 20, Height: 14) })
+{
+    foreach (var seed in Enumerable.Range(0, 40))
+    {
+        var firstMap = IslandGenerator.Generate(seed, size.Width, size.Height);
+        var secondMap = IslandGenerator.Generate(seed, size.Width, size.Height);
+        Check(firstMap.Width == size.Width && firstMap.Height == size.Height &&
+              firstMap.Tiles.Count == size.Width * size.Height &&
+              firstMap.Tiles.Select(t => t.Terrain)
+                  .SequenceEqual(secondMap.Tiles.Select(t => t.Terrain)),
+            $"Island is complete and deterministic for seed {seed}, size {size.Width}x{size.Height}");
+
+        foreach (var buildingId in sitesToVerify)
+        {
+            var definition = BuildingCatalog.Get(buildingId);
+            Check(firstMap.Tiles.Any(tile => BuildingPlacementRules.Evaluate(
+                      firstMap, tile.Position, definition).Allowed),
+                $"Seed {seed} has at least one valid site for {definition.Name}");
+        }
+        Check(firstMap.GetTile(new GridPosition(0, 0)).Terrain == TerrainKind.Water,
+            "Island corners remain water");
+    }
+}
+
+var terrainMap = IslandGenerator.Generate(17);
+var quarryDefinition = BuildingCatalog.Get(BuildingCatalog.QuarryId);
+var lumberDefinition = BuildingCatalog.Get(BuildingCatalog.LumberCampId);
+var fisheryDefinition = BuildingCatalog.Get(BuildingCatalog.FisheryId);
+var farmDefinition = BuildingCatalog.Get(BuildingCatalog.FarmId);
+var cottageDefinition = BuildingCatalog.Get(BuildingCatalog.CottageId);
+var mountainTile = terrainMap.Tiles.First(tile => tile.Terrain == TerrainKind.Mountain);
+var forestTile = terrainMap.Tiles.First(tile => tile.Terrain == TerrainKind.Forest);
+var grassTile = terrainMap.GetTile(new GridPosition(terrainMap.Width / 2, terrainMap.Height / 2));
+var waterTile = terrainMap.GetTile(new GridPosition(0, 0));
+Check(BuildingPlacementRules.Evaluate(terrainMap, mountainTile.Position, quarryDefinition).Allowed,
+    "Quarry can be placed directly on a mountain");
+Check(BuildingPlacementRules.Evaluate(terrainMap, grassTile.Position, quarryDefinition).Failure ==
+      PlacementFailure.RequiresMountain,
+    "Quarry is rejected on normal flat land");
+Check(BuildingPlacementRules.Evaluate(terrainMap, forestTile.Position, cottageDefinition).Failure ==
+      PlacementFailure.RequiresFlatLand,
+    "Housing cannot clear a forest by being placed on it");
+Check(BuildingPlacementRules.Evaluate(terrainMap, waterTile.Position, cottageDefinition).Failure ==
+      PlacementFailure.Water,
+    "Buildings cannot be placed on water");
+Check(BuildingPlacementRules.Evaluate(terrainMap, new GridPosition(-1, 0), cottageDefinition).Failure ==
+      PlacementFailure.OutsideMap,
+    "Building placement rejects coordinates outside the island");
+Check(BuildingPlacementRules.Evaluate(terrainMap, grassTile.Position,
+      BuildingCatalog.Get(BuildingCatalog.TownhouseId)).Failure ==
+      PlacementFailure.UpgradeOnly,
+    "Townhouses cannot bypass the upgrade-only restriction");
+Check(terrainMap.Tiles.Any(tile => BuildingPlacementRules.Evaluate(
+          terrainMap, tile.Position, lumberDefinition).Allowed &&
+          terrainMap.Neighbours(tile.Position).Any(t => t.Terrain == TerrainKind.Forest)),
+    "Lumber Camp placement requires orthogonal forest adjacency");
+Check(terrainMap.Tiles.Any(tile => BuildingPlacementRules.Evaluate(
+          terrainMap, tile.Position, fisheryDefinition).Allowed &&
+          terrainMap.IsShoreline(tile.Position)),
+    "Fishery placement requires a shoreline plot");
+Check(terrainMap.Tiles.Any(tile => BuildingPlacementRules.Evaluate(
+          terrainMap, tile.Position, farmDefinition).Allowed &&
+          tile.Terrain == TerrainKind.FertileLand),
+    "Farm placement requires fertile terrain");
+
+var worldState = new GameState(wood: 100, stone: 25, food: 100, coins: 100);
+var worldSettlement = new Settlement(population: 8);
+Check(worldSettlement.TryStartConstruction(
+      worldState, terrainMap, mountainTile.Position, BuildingCatalog.QuarryId),
+    "Spatial construction accepts Quarry on mountain");
+Check(worldSettlement.Buildings[0].Position == mountainTile.Position &&
+      terrainMap.TryGetBuilding(mountainTile.Position, out var placedQuarry) &&
+      ReferenceEquals(placedQuarry, worldSettlement.Buildings[0]),
+    "World occupancy references the same building object as the settlement");
+Check(worldState.Get(Resource.Wood) == 80 && worldState.Get(Resource.Coins) == 85,
+    "Spatial construction charges Quarry cost exactly once");
+Check(BuildingPlacementRules.Evaluate(terrainMap, mountainTile.Position, cottageDefinition)
+      .Failure == PlacementFailure.AlreadyOccupied,
+    "Previously occupied mountain plot rejects overlapping structures");
+Check(!worldSettlement.TryStartConstruction(
+      worldState, terrainMap, mountainTile.Position, BuildingCatalog.QuarryId) &&
+      worldState.Get(Resource.Wood) == 80 &&
+      worldSettlement.Buildings.Count == 1,
+    "Overlapping construction neither charges resources nor creates another building");
+Check(worldSettlement.TryStartConstruction(
+      worldState, terrainMap, grassTile.Position, BuildingCatalog.CottageId),
+    "Spatial Cottage construction succeeds on central grassland");
+Check(worldState.Get(Resource.Wood) == 62 && worldState.Get(Resource.Stone) == 20 &&
+      worldState.Get(Resource.Coins) == 75 && terrainMap.OccupiedSites.Count == 2,
+    "Combined spatial construction updates stockpile and occupancy");
+Check(!worldSettlement.TryStartConstruction(
+      worldState, terrainMap, waterTile.Position, BuildingCatalog.CottageId) &&
+      !worldSettlement.TryStartConstruction(
+          worldState, terrainMap, forestTile.Position, BuildingCatalog.CottageId),
+    "Invalid terrain fails without placing extra housing");
+Check(worldSettlement.Buildings.Count == 2 && worldState.Get(Resource.Wood) == 62,
+    "Invalid placement leaves inventory and building list unchanged");
+
+var poorMap = IslandGenerator.Generate(4);
+var poorSettlement = new Settlement(population: 8);
+var poorState = new GameState(wood: 0, stone: 0, food: 50, coins: 0);
+var affordableSite = poorMap.Tiles.First(t => BuildingPlacementRules.Evaluate(
+    poorMap, t.Position, cottageDefinition).Allowed);
+Check(!poorSettlement.TryStartConstruction(
+      poorState, poorMap, affordableSite.Position, BuildingCatalog.CottageId) &&
+      poorMap.OccupiedSites.Count == 0 && poorSettlement.Buildings.Count == 0,
+    "Unaffordable spatial building does not reserve land or charge resources");
+
+// Upgrading retains the building's original position and occupant reference.
+engine.EndTurn(worldState, worldSettlement);
+Check(worldSettlement.TryStartUpgrade(worldState, 1),
+    "Existing spatial Cottage can be upgraded");
+engine.EndTurn(worldState, worldSettlement);
+engine.EndTurn(worldState, worldSettlement);
+Check(worldSettlement.Buildings[1].Definition.Id == BuildingCatalog.TownhouseId &&
+      worldSettlement.Buildings[1].Position == grassTile.Position &&
+      terrainMap.TryGetBuilding(grassTile.Position, out var upgradedBuilding) &&
+      ReferenceEquals(upgradedBuilding, worldSettlement.Buildings[1]) &&
+      terrainMap.OccupiedSites.Count == 2,
+    "Townhouse upgrade preserves site identity without duplicating occupancy");
+
 Console.WriteLine("All smoke tests passed.");
