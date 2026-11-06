@@ -7,13 +7,15 @@ public sealed record BuildingDefinition(
     int ConstructionSeasons,
     IReadOnlyDictionary<Resource, int> ProductionPerSeason,
     int HousingCapacity = 0,
-    bool CanBuildDirectly = true)
+    bool CanBuildDirectly = true,
+    PlacementRequirement SiteRequirement = PlacementRequirement.FlatLand)
 {
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(Id)) throw new ArgumentException("Building ID is required.");
         if (ConstructionSeasons < 1) throw new ArgumentOutOfRangeException(nameof(ConstructionSeasons));
         if (HousingCapacity < 0) throw new ArgumentOutOfRangeException(nameof(HousingCapacity));
+        if (!Enum.IsDefined(SiteRequirement)) throw new ArgumentOutOfRangeException(nameof(SiteRequirement));
         if (Cost.Values.Any(v => v < 0) || ProductionPerSeason.Values.Any(v => v < 0))
             throw new ArgumentException("Building amounts cannot be negative.");
     }
@@ -22,6 +24,7 @@ public sealed record BuildingDefinition(
 public sealed class Building
 {
     public BuildingDefinition Definition { get; private set; }
+    public GridPosition? Position { get; }
     public int SeasonsRemaining { get; private set; }
     public bool IsComplete => SeasonsRemaining == 0;
     public int UpgradeSeasonsRemaining { get; private set; }
@@ -29,9 +32,10 @@ public sealed class Building
     public bool IsUpgrading => _pendingUpgrade is not null;
     private BuildingUpgradeDefinition? _pendingUpgrade;
 
-    internal Building(BuildingDefinition definition)
+    internal Building(BuildingDefinition definition, GridPosition? position = null)
     {
         Definition = definition;
+        Position = position;
         SeasonsRemaining = definition.ConstructionSeasons;
     }
 
@@ -110,7 +114,34 @@ public sealed class Settlement
         return accepted;
     }
 
-    // The gameplay/UI layer can select one of the catalogue buildings by ID.
+    /// <summary>
+    /// Place a building in the world, checking terrain, proximity and occupancy
+    /// before charging its construction costs. This is the preferred API for
+    /// world-based gameplay. The non-spatial overload remains for older tests
+    /// and pre-world simulation scenarios.
+    /// </summary>
+    public bool TryStartConstruction(
+        GameState state, IslandMap island, GridPosition position, string buildingId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(island);
+
+        var definition = BuildingCatalog.Get(buildingId);
+        definition.Validate();
+        if (!BuildingPlacementRules.Evaluate(island, position, definition).Allowed)
+            return false;
+        if (!state.TrySpend(definition.Cost))
+            return false;
+
+        // Turn commands are single-threaded. The tile was validated above,
+        // so these changes cannot fail independently in normal gameplay.
+        var building = new Building(definition, position);
+        island.Occupy(position, building);
+        _buildings.Add(building);
+        return true;
+    }
+
+    // Legacy scenario API without a spatial island.
     public bool TryStartConstruction(GameState state, string buildingId) =>
         TryStartConstruction(state, BuildingCatalog.Get(buildingId));
 
