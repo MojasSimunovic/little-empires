@@ -30,6 +30,7 @@ public sealed class Building
     public BuildingDefinition Definition { get; private set; }
     public GridPosition? Position { get; }
     public int WorkPriority { get; private set; }
+    public int UnitsTradedThisSeason { get; private set; }
     public int SeasonsRemaining { get; private set; }
     public bool IsComplete => SeasonsRemaining == 0;
     public int UpgradeSeasonsRemaining { get; private set; }
@@ -50,6 +51,11 @@ public sealed class Building
     }
 
     internal void SetWorkPriority(int priority) => WorkPriority = priority;
+
+    internal void RecordTrade(int quantity) =>
+        UnitsTradedThisSeason = checked(UnitsTradedThisSeason + quantity);
+
+    internal void ResetTradeQuota() => UnitsTradedThisSeason = 0;
 
     internal void StartUpgrade(BuildingUpgradeDefinition upgrade)
     {
@@ -211,6 +217,12 @@ public sealed class Settlement
             if (result is not null) completed.Add(result);
         }
         return completed;
+    }
+
+    internal void ResetTradeQuotas()
+    {
+        foreach (var building in _buildings)
+            building.ResetTradeQuota();
     }
 
     internal void Produce(GameState state)
