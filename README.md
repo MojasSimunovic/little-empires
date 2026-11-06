@@ -24,6 +24,7 @@ Or visit GitHub Actions to see automated .NET and JavaScript checks.
 ## Explore
 
 - [C# world and placement rules](docs/WORLD_RULES.md)
+- [C# dirt and stone roads](docs/ROADS.md)
 - [C#-first development roadmap](docs/DEVELOPMENT_ROADMAP.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Building catalogue](docs/BUILDINGS.md)
