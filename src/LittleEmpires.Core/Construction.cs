@@ -38,6 +38,18 @@ public sealed class Settlement
 {
     private readonly List<Building> _buildings = new();
     public IReadOnlyList<Building> Buildings => _buildings;
+    public int Population { get; private set; }
+
+    public Settlement(int population = 0)
+    {
+        SetPopulation(population);
+    }
+
+    public void SetPopulation(int population)
+    {
+        if (population < 0) throw new ArgumentOutOfRangeException(nameof(population));
+        Population = population;
+    }
 
     public bool TryStartConstruction(GameState state, BuildingDefinition definition)
     {
@@ -47,16 +59,24 @@ public sealed class Settlement
         return true;
     }
 
-    // Buildings completed this season start producing on the following season.
-    public void ResolveSeason(GameState state)
+    internal void Produce(GameState state)
     {
         foreach (var building in _buildings.Where(b => b.IsComplete))
             foreach (var (resource, amount) in building.Definition.ProductionPerSeason)
                 state.Add(resource, amount);
+    }
 
+    internal void ProgressConstruction()
+    {
         foreach (var building in _buildings.Where(b => !b.IsComplete))
             building.ProgressConstruction();
+    }
 
+    // Compatibility helper; use TurnEngine.EndTurn for complete game turns.
+    public void ResolveSeason(GameState state)
+    {
+        Produce(state);
+        ProgressConstruction();
         state.AdvanceSeason();
     }
 }
