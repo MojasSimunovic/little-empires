@@ -12,6 +12,18 @@ We will first implement and test the **simulation core in plain C#**, then hook 
 6. **Workforce and upkeep (LE-025, #34).** Buildings require workers and may incur operating costs; staffing determines whether and how much each building produces. Cap allocated workers by eligible population, and resolve the turn deterministically. Trade, taxation and wages should together create meaningful economic tradeoffs.
 7. **Unity integration (LE-026, #35).** Import a Unity-compatible packaging of the C# core, render the seeded terrain with real game-world objects, show placement validation, collect player commands, and advance the actual `TurnEngine`. Do not duplicate the rules in Unity scripts. Add camera, UI, construction visuals and save/load later.
 
+## Implementation status (current batch)
+
+- **LE-020 (#29):** Seeded island and spatial placement rules — verified by user, complete.
+- **LE-021 (#30):** Dirt/stone road system and connectivity — verified by user, complete.
+- **LE-022 (#31):** Lumber Mill/Food Processing bonuses, bounded and non-stacking — committed, awaiting latest CI.
+- **LE-023 (#32):** Tax policies and happiness effects — committed, awaiting latest CI.
+- **LE-024 (#33):** Marketplace buy/sell, spreads, trade limits and connectivity — committed, awaiting latest CI.
+- **LE-025 (#34):** Workforce allocation, production scaling and upkeep — committed, awaiting latest CI.
+- **LE-026 (#35):** Real Unity scene and runtime compatibility pass — still pending installation on the personal PC. `WorldGameSession` and read-only `WorldSnapshot` have been implemented to reduce the integration work.
+
+The integrated `strategic` console scenario and a separate `StrategicEconomyTests` suite exercise the advanced economy while leaving prior Classic scenarios intact. See [STRATEGIC_ECONOMY.md](STRATEGIC_ECONOMY.md).
+
 ## Development contract
 
 - **C# is authoritative** for turns, terrain, building costs, road rules, taxes, population, trade and production.
