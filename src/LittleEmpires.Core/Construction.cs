@@ -6,7 +6,8 @@ public sealed record BuildingDefinition(
     IReadOnlyDictionary<Resource, int> Cost,
     int ConstructionSeasons,
     IReadOnlyDictionary<Resource, int> ProductionPerSeason,
-    int HousingCapacity = 0)
+    int HousingCapacity = 0,
+    bool CanBuildDirectly = true)
 {
     public void Validate()
     {
@@ -20,9 +21,13 @@ public sealed record BuildingDefinition(
 
 public sealed class Building
 {
-    public BuildingDefinition Definition { get; }
+    public BuildingDefinition Definition { get; private set; }
     public int SeasonsRemaining { get; private set; }
     public bool IsComplete => SeasonsRemaining == 0;
+    public int UpgradeSeasonsRemaining { get; private set; }
+    public string? PendingUpgradeToId => _pendingUpgrade?.ToBuildingId;
+    public bool IsUpgrading => _pendingUpgrade is not null;
+    private BuildingUpgradeDefinition? _pendingUpgrade;
 
     internal Building(BuildingDefinition definition)
     {
@@ -33,6 +38,26 @@ public sealed class Building
     internal void ProgressConstruction()
     {
         if (SeasonsRemaining > 0) SeasonsRemaining--;
+    }
+
+    internal void StartUpgrade(BuildingUpgradeDefinition upgrade)
+    {
+        if (!IsComplete || IsUpgrading || Definition.Id != upgrade.FromBuildingId)
+            throw new InvalidOperationException("This building cannot start the requested upgrade.");
+        _pendingUpgrade = upgrade;
+        UpgradeSeasonsRemaining = upgrade.ConstructionSeasons;
+    }
+
+    internal string? ProgressUpgrade()
+    {
+        if (_pendingUpgrade is null) return null;
+        UpgradeSeasonsRemaining--;
+        if (UpgradeSeasonsRemaining > 0) return null;
+
+        var originalName = Definition.Name;
+        Definition = BuildingCatalog.Get(_pendingUpgrade.ToBuildingId);
+        _pendingUpgrade = null;
+        return $"{originalName} → {Definition.Name}";
     }
 }
 
@@ -94,9 +119,39 @@ public sealed class Settlement
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(definition);
         definition.Validate();
-        if (!state.TrySpend(definition.Cost)) return false;
+        if (!definition.CanBuildDirectly || !state.TrySpend(definition.Cost)) return false;
         _buildings.Add(new Building(definition));
         return true;
+    }
+
+    /// <summary>
+    /// Upgrade a completed housing building by its index in Buildings.
+    /// Indices remain stable until building removal is introduced.
+    /// </summary>
+    public bool TryStartUpgrade(GameState state, int buildingIndex)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (buildingIndex < 0 || buildingIndex >= _buildings.Count) return false;
+
+        var building = _buildings[buildingIndex];
+        if (!building.IsComplete || building.IsUpgrading ||
+            !HousingUpgradeCatalog.TryGet(building.Definition.Id, out var upgrade))
+            return false;
+
+        if (!state.TrySpend(upgrade!.Cost)) return false;
+        building.StartUpgrade(upgrade);
+        return true;
+    }
+
+    internal IReadOnlyList<string> ProgressUpgrades()
+    {
+        var completed = new List<string>();
+        foreach (var building in _buildings.Where(building => building.IsUpgrading))
+        {
+            var result = building.ProgressUpgrade();
+            if (result is not null) completed.Add(result);
+        }
+        return completed;
     }
 
     internal void Produce(GameState state)
@@ -117,6 +172,7 @@ public sealed class Settlement
     {
         Produce(state);
         ProgressConstruction();
+        ProgressUpgrades();
         state.AdvanceSeason();
     }
 }
