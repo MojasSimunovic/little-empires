@@ -12,6 +12,7 @@ public static class BuildingCatalog
     public const string FisheryId = "fishery";
     public const string QuarryId = "quarry";
     public const string FarmId = "farm";
+    public const string CottageId = "cottage";
 
     private static readonly IReadOnlyList<BuildingDefinition> Definitions =
         Array.AsReadOnly(new[]
@@ -31,7 +32,11 @@ public static class BuildingCatalog
             new BuildingDefinition(
                 FarmId, "Farm",
                 Map((Resource.Wood, 25), (Resource.Stone, 5), (Resource.Coins, 12)),
-                2, Map((Resource.Food, 9)))
+                2, Map((Resource.Food, 9))),
+            new BuildingDefinition(
+                CottageId, "Cottage",
+                Map((Resource.Wood, 18), (Resource.Stone, 5), (Resource.Coins, 10)),
+                1, Map(), HousingCapacity: 6)
         });
 
     private static readonly IReadOnlyDictionary<string, BuildingDefinition> ById =
