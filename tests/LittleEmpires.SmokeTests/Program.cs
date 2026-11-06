@@ -296,4 +296,95 @@ Check(growthState.Get(Resource.Wood) == 25 &&
       growthState.Get(Resource.Coins) == 70,
     "Growth scenario ends with expected stockpile after eight seasons");
 
+
+Check(new Settlement(population: 2).Happiness == 70,
+    "Settlements start with neutral-positive happiness");
+try
+{
+    _ = new Settlement(population: 1, happiness: 101);
+    throw new Exception("Happiness above 100 was accepted");
+}
+catch (ArgumentOutOfRangeException)
+{
+    Console.WriteLine("PASS: Happiness above 100 rejected");
+}
+try
+{
+    _ = new Settlement(population: 1, happiness: -1);
+    throw new Exception("Negative happiness was accepted");
+}
+catch (ArgumentOutOfRangeException)
+{
+    Console.WriteLine("PASS: Negative happiness rejected");
+}
+
+var happyState = new GameState(food: 20);
+var happyVillage = new Settlement(population: 8);
+Check(happyVillage.TryStartConstruction(happyState, BuildingCatalog.CottageId),
+    "Happy settlement can start a cottage");
+var happyTurn = engine.EndTurn(happyState, happyVillage);
+Check(happyTurn.StartingHappiness == 70 &&
+      happyTurn.Happiness == 73 &&
+      happyTurn.HappinessChange == 3,
+    "Fully fed settlement with spare housing gains three happiness");
+Check(happyTurn.NewResidents == 2,
+    "Happy settlement attracts two immigrants");
+
+var unhappyState = new GameState(food: 0);
+var unhappyVillage = new Settlement(population: 8, happiness: 60);
+Check(unhappyVillage.TryStartConstruction(unhappyState, BuildingCatalog.CottageId),
+    "Unhappy settlement can start a cottage");
+var unhappyTurn = engine.EndTurn(unhappyState, unhappyVillage);
+Check(unhappyTurn.FoodShortage == 8 &&
+      unhappyTurn.Happiness == 49 &&
+      unhappyTurn.HappinessChange == -11 &&
+      unhappyTurn.NewResidents == 0,
+    "Food shortage reduces happiness and blocks immigration");
+
+var bottomVillage = new Settlement(population: 1, happiness: 0);
+var bottomTurn = engine.EndTurn(new GameState(food: 0), bottomVillage);
+Check(bottomTurn.Happiness == 0 && bottomTurn.HappinessChange == 0,
+    "Happiness never drops below zero");
+var topVillage = new Settlement(population: 1, happiness: 100);
+var topTurn = engine.EndTurn(new GameState(food: 100), topVillage);
+Check(topTurn.Happiness == 100 && topTurn.HappinessChange == 0,
+    "Happiness never exceeds one hundred");
+
+static TurnSummary ImmigrationAtHappiness(int initialHappiness)
+{
+    var state = new GameState(food: 30);
+    var village = new Settlement(population: 8, happiness: initialHappiness);
+    if (!village.TryStartConstruction(state, BuildingCatalog.CottageId))
+        throw new Exception("Failed to construct cottage for happiness threshold test");
+    return new TurnEngine().EndTurn(state, village);
+}
+
+var lowHappinessTurn = ImmigrationAtHappiness(46);
+var moderateHappinessTurn = ImmigrationAtHappiness(47);
+var highHappinessTurn = ImmigrationAtHappiness(67);
+Check(lowHappinessTurn.Happiness == 49 && lowHappinessTurn.NewResidents == 0,
+    "Below 50 happiness prevents immigration despite food and housing");
+Check(moderateHappinessTurn.Happiness == 50 && moderateHappinessTurn.NewResidents == 1,
+    "At 50 happiness, one immigrant can arrive");
+Check(highHappinessTurn.Happiness == 70 && highHappinessTurn.NewResidents == 2,
+    "At 70 happiness, two immigrants can arrive");
+
+var happinessScenarioState = new GameState(wood: 80, stone: 25, food: 0, coins: 100);
+var happinessScenarioVillage = new Settlement(population: 8, happiness: 75);
+var happinessScenarioReports = new ScenarioRunner().Run(
+    happinessScenarioState, happinessScenarioVillage, 8, growthPlan);
+Check(happinessScenarioReports.Select(report => report.Turn.Happiness)
+      .SequenceEqual(new[] { 64, 53, 42, 45, 48, 51, 54, 57 }),
+    "Happiness scenario falls during shortages and recovers gradually");
+Check(happinessScenarioReports.Select(report => report.Turn.NewResidents)
+      .SequenceEqual(new[] { 0, 0, 0, 0, 0, 1, 1, 1 }),
+    "Happiness scenario suppresses immigration until happiness recovers");
+Check(happinessScenarioReports.Sum(report => report.Turn.FoodShortage) == 14 &&
+      happinessScenarioVillage.Population == 11 &&
+      happinessScenarioState.Get(Resource.Food) == 27,
+    "Happiness scenario recovers food and ends with eleven residents");
+Check(growthReports.Select(report => report.Turn.Population)
+      .SequenceEqual(new[] { 10, 12, 14, 14, 14, 14, 14, 14 }),
+    "Existing growth scenario still reaches fourteen residents");
+
 Console.WriteLine("All smoke tests passed.");
