@@ -134,6 +134,29 @@ public static class StrategicEconomyTests
               !noUpkeep.GrossProduction.ContainsKey(Resource.Wood),
             "A building unable to cover upkeep does not produce or employ workers");
 
+        // A connected processor cannot boost output without employees and upkeep.
+        var laborMap = World();
+        var laborState = new GameState(wood: 200, stone: 100, food: 100, coins: 200);
+        var laborTown = new Settlement(population: 3, economyMode: EconomyMode.Strategic);
+        check(laborTown.TryStartConstruction(laborState, laborMap,
+                  new GridPosition(1, 2), BuildingCatalog.LumberCampId) &&
+              laborTown.TryStartConstruction(laborState, laborMap,
+                  new GridPosition(4, 2), BuildingCatalog.LumberMillId),
+            "Understaffed production scenario places camp and mill");
+        RoadLine(laborMap, 3, 1, 4);
+        engine.EndTurn(laborState, laborTown, laborMap);
+        engine.EndTurn(laborState, laborTown, laborMap);
+        var campPriority = engine.EndTurn(laborState, laborTown, laborMap);
+        check(campPriority.GrossProduction[Resource.Wood] == 6 &&
+              campPriority.WorkingResidents == 3,
+            "Mill without workers cannot boost fully staffed camp");
+        check(laborTown.SetWorkPriority(1, 10),
+            "Mill can be assigned priority over Lumber Camp");
+        var millPriority = engine.EndTurn(laborState, laborTown, laborMap);
+        check(millPriority.GrossProduction[Resource.Wood] == 3 &&
+              millPriority.WorkingResidents == 3,
+            "Staffing processor first reduces camp output but enables its bonus");
+
         var spare = new Settlement(population: 10, economyMode: EconomyMode.Strategic);
         var spareTurn = engine.EndTurn(new GameState(food: 100), spare);
         check(spareTurn.UnemployedResidents == 10 &&
@@ -250,6 +273,25 @@ public static class StrategicEconomyTests
         check(MarketplaceTrading.Execute(inventory, village, island, 1,
                   TradeDirection.Sell, Resource.Stone, 1).Succeeded,
             "Market trade quota resets after ending a season");
+
+        var coinsToClear = inventory.Get(Resource.Coins);
+        check(inventory.TrySpend(new Dictionary<Resource, int>
+                  { [Resource.Coins] = coinsToClear }),
+            "Test setup can clear all coins");
+        var woodBalance = inventory.Get(Resource.Wood);
+        check(MarketplaceTrading.Execute(inventory, village, island, 1,
+                  TradeDirection.Buy, Resource.Wood, 1).Failure ==
+                  TradeFailure.InsufficientCoins &&
+              inventory.Get(Resource.Wood) == woodBalance,
+            "Market rejects purchases without coins without modifying goods");
+        var foodToClear = inventory.Get(Resource.Food);
+        check(inventory.TrySpend(new Dictionary<Resource, int>
+                  { [Resource.Food] = foodToClear }),
+            "Test setup can clear food inventory");
+        check(MarketplaceTrading.Execute(inventory, village, island, 1,
+                  TradeDirection.Sell, Resource.Food, 1).Failure ==
+                  TradeFailure.InsufficientStock,
+            "Market rejects selling goods that are not held");
 
         var overflowIsland = World();
         var overflowVillage = new Settlement(population: 8);
