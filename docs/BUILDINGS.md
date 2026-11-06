@@ -10,6 +10,9 @@ This is an **initial balance proposal**, not a final economy. The catalogue live
 | Farm | `farm` | 25 wood + 5 stone + 12 coins | 2 | +9 food |
 | Cottage | `cottage` | 18 wood + 5 stone + 10 coins | 1 | +6 housing slots |
 | Townhouse | `townhouse` | Upgrade-only; see below | 2-season upgrade | 12 total housing slots (replaces Cottage) |
+| Lumber Mill | `lumber-mill` | 35 wood + 15 stone + 30 coins | 2 | +50% connected Lumber Camp output |
+| Food Processing Plant | `food-processor` | 40 wood + 20 stone + 40 coins | 3 | +25% connected Farm/Fishery output |
+| Marketplace | `marketplace` | 25 wood + 10 stone + 20 coins | 2 | Buy/sell goods with margins and quotas |
 
 ## Gameplay reasoning
 
@@ -19,11 +22,14 @@ This is an **initial balance proposal**, not a final economy. The catalogue live
 - **Quarry:** provides stone for expanding settlements.
 - **Cottage:** expands housing capacity; does not produce resources.
 - **Townhouse:** denser housing that replaces an existing completed Cottage in place.
+- **Lumber Mill:** expensive industrial multiplier that rewards road planning.
+- **Food Processing Plant:** productivity multiplier for connected food producers.
+- **Marketplace:** turns surplus goods into coins and funds imports.
 
 ## Current simulation rules
 - Building construction **does not use strategic action points**.
 - Building costs are charged in full when construction starts.
-- Existing buildings produce first each seasonal turn; residents then consume one food each.
+- In Classic mode, buildings produce before residents consume one food each; Strategic mode also collects taxes, allocates workers and charges upkeep first.
 - Construction progresses later in the turn. A building that finishes construction during a turn starts producing **next** turn.
 - If there is not enough food, inventory stops at zero and the turn report records the deficit.
 - The founding residents start with exactly enough housing for themselves; no spare capacity.
@@ -33,7 +39,8 @@ This is an **initial balance proposal**, not a final economy. The catalogue live
 - Immigration brings at most two residents per season, limited by free housing and food remaining after feeding existing residents (at least one surplus food per arrival). Immigration does not consume food; arrivals eat from the following season.
 - No immigration during food shortages; shortages do not reduce population yet.
 - Happiness affects immigration: below 50 none, 50–69 at most 1, 70+ at most 2; shortages block it entirely.
-- Terrain, adjacency, workers, upkeep, storage limits, seasonal modifiers and housing-quality demand are not yet implemented.
+- C# spatial terrain and road adjacency rules are implemented. Strategic mode activates staffing, upkeep, taxation, non-stacking industrial bonuses and Marketplace trading; see [STRATEGIC_ECONOMY.md](STRATEGIC_ECONOMY.md).
+- Storage limits, seasonal production modifiers, distinct processed goods and housing-quality demand are not yet implemented.
 - The values above may change after playtesting.
 
 ## Example
