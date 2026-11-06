@@ -1,7 +1,7 @@
 namespace LittleEmpires.Core;
 
 /// <summary>
-/// First-pass immigration policy: housing plus a food surplus attracts new residents.
+/// First-pass immigration policy: housing, food surplus, and happiness attract new residents.
 /// Surplus food is not consumed by immigration; arrivals begin eating next season.
 /// </summary>
 public sealed class PopulationGrowthSystem
@@ -17,9 +17,19 @@ public sealed class PopulationGrowthSystem
         if (foodShortage > 0)
             return 0;
 
+        // Happiness is resolved before immigration each season.
+        // Unhappy settlements cannot attract residents; moderately happy
+        // settlements attract at most one, and thriving ones up to two.
+        var happinessLimit = settlement.Happiness switch
+        {
+            < 50 => 0,
+            < 70 => 1,
+            _ => MaxImmigrantsPerSeason
+        };
+
         // Require one unit of remaining food per newcomer as a simple
         // food-security proxy. The food itself stays in the stockpile.
-        var eligibleResidents = Math.Min(MaxImmigrantsPerSeason, state.Get(Resource.Food));
+        var eligibleResidents = Math.Min(happinessLimit, state.Get(Resource.Food));
         return settlement.AcceptImmigrants(eligibleResidents);
     }
 }
