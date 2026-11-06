@@ -1,0 +1,27 @@
+name: C# Core CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core-smoke-tests:
+    name: Build and smoke test (.NET 8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build core library
+        run: dotnet build src/LittleEmpires.Core/LittleEmpires.Core.csproj --configuration Release --warnaserror
+      - name: Run smoke tests
+        run: dotnet run --project tests/LittleEmpires.SmokeTests/LittleEmpires.SmokeTests.csproj --configuration Release
