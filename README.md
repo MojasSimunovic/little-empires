@@ -23,6 +23,8 @@ Or visit GitHub Actions to see automated .NET and JavaScript checks.
 
 ## Explore
 
+- [C# world and placement rules](docs/WORLD_RULES.md)
+- [C#-first development roadmap](docs/DEVELOPMENT_ROADMAP.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Building catalogue](docs/BUILDINGS.md)
 - [Seasonal simulator](docs/SIMULATOR.md)
