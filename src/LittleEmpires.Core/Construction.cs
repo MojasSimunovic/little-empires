@@ -138,7 +138,8 @@ public sealed class Settlement
             !HousingUpgradeCatalog.TryGet(building.Definition.Id, out var upgrade))
             return false;
 
-        if (!state.TrySpend(upgrade!.Cost)) return false;
+        upgrade!.Validate();
+        if (!state.TrySpend(upgrade.Cost)) return false;
         building.StartUpgrade(upgrade);
         return true;
     }
