@@ -21,19 +21,19 @@ public static class BuildingCatalog
             new BuildingDefinition(
                 LumberCampId, "Lumber Camp",
                 Map((Resource.Wood, 15), (Resource.Coins, 10)),
-                2, Map((Resource.Wood, 6))),
+                2, Map((Resource.Wood, 6)), SiteRequirement: PlacementRequirement.ForestEdge),
             new BuildingDefinition(
                 FisheryId, "Fishery",
                 Map((Resource.Wood, 12), (Resource.Stone, 3), (Resource.Coins, 8)),
-                1, Map((Resource.Food, 5))),
+                1, Map((Resource.Food, 5)), SiteRequirement: PlacementRequirement.Shoreline),
             new BuildingDefinition(
                 QuarryId, "Quarry",
                 Map((Resource.Wood, 20), (Resource.Coins, 15)),
-                2, Map((Resource.Stone, 4))),
+                2, Map((Resource.Stone, 4)), SiteRequirement: PlacementRequirement.Mountain),
             new BuildingDefinition(
                 FarmId, "Farm",
                 Map((Resource.Wood, 25), (Resource.Stone, 5), (Resource.Coins, 12)),
-                2, Map((Resource.Food, 9))),
+                2, Map((Resource.Food, 9)), SiteRequirement: PlacementRequirement.FertileLand),
             new BuildingDefinition(
                 CottageId, "Cottage",
                 Map((Resource.Wood, 18), (Resource.Stone, 5), (Resource.Coins, 10)),
