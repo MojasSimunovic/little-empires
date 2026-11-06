@@ -19,6 +19,7 @@ Unity 6 is the target engine. The core simulation is written in plain C# without
 ## Layout
 - `src/LittleEmpires.Core`: Unity-independent C# simulation.
 - `tests/LittleEmpires.SmokeTests`: dependency-free executable assertions.
+- `src/LittleEmpires.Simulator`: console-based multi-season balancing scenario, powered by the same `TurnEngine` (see [SIMULATOR.md](SIMULATOR.md)).
 - Future Unity project: `unity/LittleEmpires` (when editor becomes available).
 
 ## Local verification (requires approved .NET 8 SDK)
