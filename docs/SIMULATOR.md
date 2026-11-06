@@ -26,7 +26,13 @@ To run the **happiness and recovery** scenario, use:
 dotnet run --project src/LittleEmpires.Simulator -- happiness 8
 ```
 
-The GitHub Actions workflow builds and executes **all three** scenarios even if you cannot install .NET locally. Open the latest `C# Core CI` run, select the job, and expand any **Run eight-season ... scenario** step to view the printed report.
+To run the **Cottage → Townhouse upgrade** scenario, use:
+
+```bash
+dotnet run --project src/LittleEmpires.Simulator -- upgrade 8
+```
+
+The GitHub Actions workflow builds and executes **all four** scenarios even if you cannot install .NET locally. Open the latest `C# Core CI` run, select the job, and expand any **Run eight-season ... scenario** step to view the printed report.
 
 ## Default scenario
 
@@ -103,12 +109,34 @@ Expected total food shortage: **14**. Expected final food: **27**, population **
 - A food shortage always blocks immigration, regardless of happiness. Food and housing constraints continue to apply.
 - The penalty is currently fixed per shortage season, not proportional to missing food.
 
+## Cottage-to-Townhouse upgrade scenario (LE-018)
+
+- Starts with **8 residents**, **70 happiness**, **100 wood**, **40 stone**, **60 food**, **100 coins**.
+- Builds **Cottage + Fishery** in turn 1, **Farm** in turn 2.
+- On turn 4, pays **24 wood, 10 stone, 20 coins** to upgrade the existing Cottage (building index 0).
+- The upgrade takes **two turns**: the Cottage remains available with 6 slots on turn 4, then becomes a Townhouse with **12 slots** on turn 5.
+- Immigration immediately uses the expanded capacity when the upgrade completes; it still respects food surplus and happiness.
+- No new building is created: the original building changes type in place.
+
+| Turn | Season | Housing cap | Population | Happiness | Upgrade |
+|---:|---|---:|---:|---:|---|
+| 1 | Spring, Year 1 | 14 | 10 | 73 | Cottage completed |
+| 2 | Summer, Year 1 | 14 | 12 | 76 | — |
+| 3 | Autumn, Year 1 | 14 | 14 | 79 | — |
+| 4 | Winter, Year 1 | 14 | 14 | 80 | Upgrade started (1/2) |
+| 5 | Spring, Year 2 | 20 | 16 | 83 | Townhouse completed (2/2) |
+| 6 | Summer, Year 2 | 20 | 18 | 86 | — |
+| 7 | Autumn, Year 2 | 20 | 20 | 89 | — |
+| 8 | Winter, Year 2 | 20 | 20 | 90 | — |
+
+Expected final resources: **21 wood, 17 stone, 28 food, 50 coins**. No food shortages; 12 total immigrants; one Cottage upgraded to Townhouse. This is a deterministic benchmark, not a final balance.
+
 ## Current limitations
 
-- No map or terrain, worker assignments, advanced housing upgrades, services, trade, or AI rivals.
+- No map or terrain, worker assignments, housing quality tiers beyond Townhouse, services, trade, or AI rivals.
 - Food shortages are reported but do not reduce population. Food security uses a simple one-surplus-food-per-newcomer rule, not a forecast of next season's needs.
 - Building production and consumption are currently constant across seasons.
-- The scenario is scripted rather than an autonomous economic AI.
+- The scenario is scripted rather than an autonomous economic AI. Upgrade orders currently target a building index rather than a persistent world-object ID.
 - Starting values are provisional; use reports to tune balance after playtesting.
 
 For architecture and building costs see [ARCHITECTURE.md](ARCHITECTURE.md) and [BUILDINGS.md](BUILDINGS.md).
