@@ -11,8 +11,10 @@ Unity 6 is the target engine. The core simulation is written in plain C# without
 - Newly completed buildings start producing in the **following** season.
 - Production from completed buildings is resolved before advancing construction.
 - The first slice uses wood, stone, food, and coins.
-- The turn pipeline is: existing-building production → population food consumption → construction progress → calendar advancement → turn summary.
+- The turn pipeline is: existing-building production → existing residents consume food → construction progress → immigration → calendar advancement → turn summary.
 - Food consumption is one food per resident per season. Food shortages are reported but do not change population yet.
+- Starting residents are assumed housed; new housing capacity comes from completed Cottages. Each Cottage adds 6 housing slots.
+- Up to 2 immigrants arrive after construction each season if there is spare housing, no food shortage, and sufficient food surplus. They eat beginning the following season.
 - Building definitions and provisional balance values live in `BuildingCatalog` (see [BUILDINGS.md](BUILDINGS.md)).
 - Strategic actions, diplomacy, Council, terrain constraints, and trade will be introduced in later tickets.
 
