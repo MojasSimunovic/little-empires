@@ -14,15 +14,19 @@ public sealed record TurnSummary(
     int FoodShortage,
     int StartingPopulation,
     int NewResidents,
-    int HousingCapacity);
+    int HousingCapacity,
+    int StartingHappiness,
+    int Happiness,
+    int HappinessChange);
 
 /// <summary>
-/// Resolves one season: production, food consumption, construction, immigration,
-/// then calendar advancement. New buildings produce from the next turn.
+/// Resolves one season: production, food consumption, construction, happiness,
+/// immigration, then calendar advancement. New buildings produce from the next turn.
 /// </summary>
 public sealed class TurnEngine
 {
     private readonly PopulationGrowthSystem _growth = new();
+    private readonly SettlementHappinessSystem _happiness = new();
 
     public TurnSummary EndTurn(GameState state, Settlement settlement)
     {
@@ -32,6 +36,7 @@ public sealed class TurnEngine
         var startingYear = state.Year;
         var startingSeason = state.Season;
         var startingPopulation = settlement.Population;
+        var startingHappiness = settlement.Happiness;
         var before = Enum.GetValues<Resource>()
             .ToDictionary(resource => resource, state.Get);
         var incomplete = settlement.Buildings
@@ -46,6 +51,7 @@ public sealed class TurnEngine
             state.TrySpend(new Dictionary<Resource, int> { [Resource.Food] = foodConsumed });
         var foodShortage = foodRequired - foodConsumed;
         settlement.ProgressConstruction();
+        var happinessChange = _happiness.ResolveSeason(settlement, foodShortage);
         // New residents arrive after current residents have eaten. They start
         // consuming food on the following seasonal turn.
         var newResidents = _growth.ResolveImmigration(state, settlement, foodShortage);
@@ -62,6 +68,7 @@ public sealed class TurnEngine
             startingYear, startingSeason, state.Year, state.Season,
             changes, completed, settlement.Population,
             foodRequired, foodConsumed, foodShortage,
-            startingPopulation, newResidents, settlement.HousingCapacity);
+            startingPopulation, newResidents, settlement.HousingCapacity,
+            startingHappiness, settlement.Happiness, happinessChange);
     }
 }
