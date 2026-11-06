@@ -90,8 +90,8 @@ catch (ArgumentOutOfRangeException)
 
 
 var definitions = BuildingCatalog.All;
-Check(definitions.Count == 5, "Catalogue contains four producers and one cottage");
-Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 5,
+Check(definitions.Count == 6, "Catalogue contains four producers, Cottage, and upgrade-only Townhouse");
+Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 6,
     "Every catalogue building has a unique ID");
 foreach (var definition in definitions)
 {
@@ -386,5 +386,125 @@ Check(happinessScenarioReports.Sum(report => report.Turn.FoodShortage) == 14 &&
 Check(growthReports.Select(report => report.Turn.Population)
       .SequenceEqual(new[] { 10, 12, 14, 14, 14, 14, 14, 14 }),
     "Existing growth scenario still reaches fourteen residents");
+
+
+var townhouse = BuildingCatalog.Get(BuildingCatalog.TownhouseId);
+Check(!townhouse.CanBuildDirectly && townhouse.HousingCapacity == 12,
+    "Townhouse is an upgrade-only building with twelve housing slots");
+var directTownhouseState = new GameState();
+var directTownhouseVillage = new Settlement(population: 8);
+Check(!directTownhouseVillage.TryStartConstruction(directTownhouseState, BuildingCatalog.TownhouseId) &&
+      directTownhouseVillage.Buildings.Count == 0,
+    "Townhouse cannot be built directly, even though its definition has no direct cost");
+
+var upgradeDefinition = HousingUpgradeCatalog.CottageToTownhouse;
+upgradeDefinition.Validate();
+Check(upgradeDefinition.FromBuildingId == BuildingCatalog.CottageId &&
+      upgradeDefinition.ToBuildingId == BuildingCatalog.TownhouseId &&
+      upgradeDefinition.ConstructionSeasons == 2 &&
+      upgradeDefinition.Cost[Resource.Wood] == 24 &&
+      upgradeDefinition.Cost[Resource.Stone] == 10 &&
+      upgradeDefinition.Cost[Resource.Coins] == 20,
+    "Cottage-to-Townhouse upgrade has the correct cost and duration");
+
+var upgradeState = new GameState(wood: 100, stone: 40, food: 100, coins: 100);
+var upgradeVillage = new Settlement(population: 8);
+Check(upgradeVillage.TryStartConstruction(upgradeState, BuildingCatalog.CottageId),
+    "Cottage can be built before upgrading");
+Check(!upgradeVillage.TryStartUpgrade(upgradeState, 0) &&
+      upgradeState.Get(Resource.Wood) == 82,
+    "Unfinished cottage cannot be upgraded or charged");
+engine.EndTurn(upgradeState, upgradeVillage);
+Check(upgradeVillage.HousingCapacity == 14 && upgradeVillage.Population == 10,
+    "Completed cottage houses residents before upgrade begins");
+Check(!upgradeVillage.TryStartUpgrade(upgradeState, 1) &&
+      !upgradeVillage.TryStartUpgrade(upgradeState, -1),
+    "Invalid building indices cannot be upgraded");
+Check(upgradeVillage.TryStartUpgrade(upgradeState, 0),
+    "Completed cottage can begin upgrade");
+Check(upgradeState.Get(Resource.Wood) == 58 &&
+      upgradeState.Get(Resource.Stone) == 25 &&
+      upgradeState.Get(Resource.Coins) == 70,
+    "Upgrade costs are paid upfront exactly once");
+Check(upgradeVillage.Buildings[0].IsUpgrading &&
+      upgradeVillage.Buildings[0].UpgradeSeasonsRemaining == 2 &&
+      upgradeVillage.Buildings[0].PendingUpgradeToId == BuildingCatalog.TownhouseId &&
+      upgradeVillage.HousingCapacity == 14,
+    "Cottage retains six housing slots while upgrade is pending");
+Check(!upgradeVillage.TryStartUpgrade(upgradeState, 0) &&
+      upgradeState.Get(Resource.Coins) == 70,
+    "A building cannot begin a second upgrade while already upgrading");
+
+var upgradeSeasonOne = engine.EndTurn(upgradeState, upgradeVillage);
+Check(upgradeSeasonOne.CompletedUpgrades.Count == 0 &&
+      upgradeVillage.Buildings[0].UpgradeSeasonsRemaining == 1 &&
+      upgradeSeasonOne.HousingCapacity == 14 &&
+      upgradeSeasonOne.Population == 12,
+    "First upgrade season preserves original housing and residents");
+var upgradeSeasonTwo = engine.EndTurn(upgradeState, upgradeVillage);
+Check(upgradeSeasonTwo.CompletedUpgrades.SequenceEqual(new[] { "Cottage → Townhouse" }) &&
+      upgradeSeasonTwo.HousingCapacity == 20 &&
+      upgradeSeasonTwo.Population == 14,
+    "Second upgrade season unlocks six additional housing slots");
+Check(upgradeVillage.Buildings.Count == 1 &&
+      upgradeVillage.Buildings[0].Definition.Id == BuildingCatalog.TownhouseId &&
+      !upgradeVillage.Buildings[0].IsUpgrading &&
+      upgradeVillage.Buildings[0].UpgradeSeasonsRemaining == 0,
+    "Upgrade transforms the same building instead of creating another");
+Check(!upgradeVillage.TryStartUpgrade(upgradeState, 0),
+    "Completed Townhouse cannot be upgraded a second time");
+
+var unaffordableUpgradeState = new GameState(wood: 18, stone: 5, food: 100, coins: 10);
+var unaffordableUpgradeVillage = new Settlement(population: 8);
+Check(unaffordableUpgradeVillage.TryStartConstruction(unaffordableUpgradeState, BuildingCatalog.CottageId),
+    "Minimum-resource settlement can build Cottage");
+engine.EndTurn(unaffordableUpgradeState, unaffordableUpgradeVillage);
+Check(!unaffordableUpgradeVillage.TryStartUpgrade(unaffordableUpgradeState, 0) &&
+      unaffordableUpgradeVillage.Buildings[0].Definition.Id == BuildingCatalog.CottageId &&
+      !unaffordableUpgradeVillage.Buildings[0].IsUpgrading,
+    "Unaffordable upgrades leave the building and resources unchanged");
+
+var nonHousingUpgradeState = new GameState(food: 100);
+var nonHousingUpgradeVillage = new Settlement(population: 8);
+Check(nonHousingUpgradeVillage.TryStartConstruction(nonHousingUpgradeState, BuildingCatalog.FisheryId),
+    "Fishery can be built for upgrade eligibility test");
+engine.EndTurn(nonHousingUpgradeState, nonHousingUpgradeVillage);
+Check(!nonHousingUpgradeVillage.TryStartUpgrade(nonHousingUpgradeState, 0),
+    "Non-housing buildings cannot use the Cottage upgrade");
+
+var townhouseScenarioState = new GameState(wood: 100, stone: 40, food: 60, coins: 100);
+var townhouseScenarioVillage = new Settlement(population: 8);
+var townhousePlan = new[]
+{
+    new PlannedConstruction(0, BuildingCatalog.CottageId),
+    new PlannedConstruction(0, BuildingCatalog.FisheryId),
+    new PlannedConstruction(1, BuildingCatalog.FarmId)
+};
+var townhouseUpgradePlan = new[] { new PlannedUpgrade(3, 0) };
+var townhouseReports = new ScenarioRunner().Run(
+    townhouseScenarioState, townhouseScenarioVillage, 8,
+    townhousePlan, townhouseUpgradePlan);
+Check(townhouseReports[3].Upgrades.Count == 1 &&
+      townhouseReports[3].Upgrades[0].Started &&
+      townhouseReports[4].Turn.CompletedUpgrades.Contains("Cottage → Townhouse"),
+    "Scripted upgrade starts in Winter and finishes in following Spring");
+Check(townhouseReports.Select(report => report.Turn.HousingCapacity)
+      .SequenceEqual(new[] { 14, 14, 14, 14, 20, 20, 20, 20 }),
+    "Housing capacity expands only on upgrade completion");
+Check(townhouseReports.Select(report => report.Turn.Population)
+      .SequenceEqual(new[] { 10, 12, 14, 14, 16, 18, 20, 20 }),
+    "Immigration resumes after housing upgrade and stops at new capacity");
+Check(townhouseReports.Select(report => report.Turn.Happiness)
+      .SequenceEqual(new[] { 73, 76, 79, 80, 83, 86, 89, 90 }),
+    "Housing upgrade feeds into existing happiness calculations");
+Check(townhouseReports.All(report => report.Turn.FoodShortage == 0) &&
+      townhouseScenarioState.Get(Resource.Food) == 28 &&
+      townhouseScenarioState.Get(Resource.Wood) == 21 &&
+      townhouseScenarioState.Get(Resource.Stone) == 17 &&
+      townhouseScenarioState.Get(Resource.Coins) == 50,
+    "Two-year townhouse scenario ends with deterministic resource balances");
+Check(townhouseScenarioVillage.Buildings.Count == 3 &&
+      townhouseScenarioVillage.Buildings[0].Definition.Id == BuildingCatalog.TownhouseId,
+    "Scripted upgrade does not duplicate the original Cottage");
 
 Console.WriteLine("All smoke tests passed.");
