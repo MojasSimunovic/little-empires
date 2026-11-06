@@ -1,6 +1,6 @@
 # Settlement Economy Simulator (LE-015)
 
-The console simulator runs the **same** `TurnEngine` as the future Unity game. It is a deterministic balancing sandbox, not a separate game implementation.
+The console simulator runs the **same** `TurnEngine` as the future Unity game. Existing modes stay in Classic economics for reproducible historical benchmarks, and the new `strategic` mode exercises the advanced C# rules. It is a deterministic balancing sandbox, not a separate game implementation.
 
 ## Run locally (approved .NET 8 SDK)
 
@@ -32,7 +32,15 @@ To run the **Cottage → Townhouse upgrade** scenario, use:
 dotnet run --project src/LittleEmpires.Simulator -- upgrade 8
 ```
 
-The GitHub Actions workflow builds and executes **all four** scenarios even if you cannot install .NET locally. Open the latest `C# Core CI` run, select the job, and expand any **Run eight-season ... scenario** step to view the printed report.
+To run the fully connected **strategic economy** integration scenario, use:
+
+```bash
+dotnet run --project src/LittleEmpires.Simulator -- strategic 8
+```
+
+This builds a scripted world with a forest, mountain, shoreline, roads, Lumber Camp, Lumber Mill, Farm, Fishery, Food Processing Plant, Marketplace, Quarry and Cottage. It uses `EconomyMode.Strategic`, High taxation, worker allocation, upkeep and a buy/sell pair of trades after the Marketplace is completed. The output includes population, happiness, gross production, taxes, staffing and resource balances. See [STRATEGIC_ECONOMY.md](STRATEGIC_ECONOMY.md) for all rules.
+
+The GitHub Actions workflow builds and executes **all five** scenarios even if you cannot install .NET locally. Open the latest `C# Core CI` run, select the job, and expand any **Run eight-season ... scenario** step to view the printed report.
 
 ## Default scenario
 
