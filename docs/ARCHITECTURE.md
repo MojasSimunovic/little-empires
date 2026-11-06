@@ -21,7 +21,11 @@ Unity 6 is the target engine. The core simulation is written in plain C# without
 - Building definitions and provisional balance values live in `BuildingCatalog` (see [BUILDINGS.md](BUILDINGS.md)).
 - Spatial terrain, shoreline/forest adjacency, placement checks and occupancy are now available via `IslandMap`, `IslandGenerator` and `BuildingPlacementRules` (see [WORLD_RULES.md](WORLD_RULES.md)). Older simulation scenarios still use the non-spatial constructor overload.
 - Roads are represented by `IslandMap.Roads`: free dirt-road placement, paid stone-road upgrades, separate occupancy and four-way connectivity to buildings; see [ROADS.md](ROADS.md).
-- Road connections currently have no production effect; processing, taxes, trade, workforce, strategic actions, diplomacy and Council follow; see [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md).
+- Strategic-mode industrial bonuses now require road-connected processors: Lumber Mill (+50% Lumber Camp wood) and Food Processing Plant (+25% Farm/Fishery food), within a capped range and non-stacking. See [STRATEGIC_ECONOMY.md](STRATEGIC_ECONOMY.md).
+- `EconomyMode.Strategic` activates workforce assignments, operating costs, taxation and happiness tradeoffs. `EconomyMode.Classic` preserves the initial simulator balance fixtures.
+- `MarketplaceTrading` provides inventory-safe buy/sell commands with spread, road-access requirements and seasonal quotas.
+- `WorldGameSession` centralizes island/settlement commands and immutable `WorldSnapshot` views for Unity integration. The Unity runtime is not connected yet; a compatibility packaging pass is required.
+- Strategic actions, diplomacy, archipelago Council, UI and richer trade routes are future milestones.
 - Unity integration is a separate compatibility milestone. The current core targets .NET 8 and must not be assumed Unity-assembly compatible yet.
 
 ## Layout
