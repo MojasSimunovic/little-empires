@@ -31,3 +31,5 @@ jobs:
         run: dotnet run --project src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --no-build -- 8
       - name: Run eight-season housing and immigration scenario
         run: dotnet run --project src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --no-build -- growth 8
+      - name: Run eight-season happiness recovery scenario
+        run: dotnet run --project src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --no-build -- happiness 8
