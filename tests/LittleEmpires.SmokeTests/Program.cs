@@ -88,4 +88,69 @@ catch (ArgumentOutOfRangeException)
     Console.WriteLine("PASS: Negative population rejected");
 }
 
+
+var definitions = BuildingCatalog.All;
+Check(definitions.Count == 4, "Catalogue contains four starter buildings");
+Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 4,
+    "Every catalogue building has a unique ID");
+foreach (var definition in definitions)
+{
+    definition.Validate();
+    Check(definition.ProductionPerSeason.Count > 0 &&
+          definition.ConstructionSeasons >= 1, $"{definition.Name} definition is valid");
+}
+Check(BuildingCatalog.TryGet("FARM", out var selectedFarm) &&
+      selectedFarm?.Id == BuildingCatalog.FarmId,
+    "Catalogue supports case-insensitive lookup");
+Check(!BuildingCatalog.TryGet("unknown", out var missingBuilding) &&
+      missingBuilding is null,
+    "Unknown catalogue ID is not found");
+
+try
+{
+    BuildingCatalog.Get("unknown");
+    throw new Exception("Unknown building ID was accepted");
+}
+catch (KeyNotFoundException)
+{
+    Console.WriteLine("PASS: Unknown building ID rejected");
+}
+
+var catalogueState = new GameState(wood: 200, stone: 100, food: 0, coins: 100);
+var catalogueSettlement = new Settlement();
+foreach (var definition in definitions)
+    Check(catalogueSettlement.TryStartConstruction(catalogueState, definition.Id),
+        $"{definition.Name} can be built by catalogue ID");
+Check(catalogueState.Get(Resource.Wood) == 128 &&
+      catalogueState.Get(Resource.Stone) == 92 &&
+      catalogueState.Get(Resource.Coins) == 55,
+    "All catalogue building costs are paid upfront");
+
+var catalogueSpring = engine.EndTurn(catalogueState, catalogueSettlement);
+Check(catalogueSpring.CompletedBuildings.SequenceEqual(new[] { "Fishery" }),
+    "One-season Fishery finishes first");
+Check(catalogueSpring.ResourceChanges[Resource.Food] == 0,
+    "Newly finished Fishery does not produce immediately");
+
+var catalogueSummer = engine.EndTurn(catalogueState, catalogueSettlement);
+Check(catalogueSummer.ResourceChanges[Resource.Food] == 5,
+    "Fishery begins producing the season after completion");
+Check(catalogueSummer.CompletedBuildings.Count == 3 &&
+      catalogueSummer.CompletedBuildings.Contains("Farm") &&
+      catalogueSummer.CompletedBuildings.Contains("Lumber Camp") &&
+      catalogueSummer.CompletedBuildings.Contains("Quarry"),
+    "Two-season buildings finish together");
+
+var catalogueAutumn = engine.EndTurn(catalogueState, catalogueSettlement);
+Check(catalogueAutumn.ResourceChanges[Resource.Wood] == 6 &&
+      catalogueAutumn.ResourceChanges[Resource.Stone] == 4 &&
+      catalogueAutumn.ResourceChanges[Resource.Food] == 14,
+    "Completed catalogue buildings generate their configured production");
+
+var brokeState = new GameState(wood: 0, stone: 0, food: 0, coins: 0);
+var brokeSettlement = new Settlement();
+Check(!brokeSettlement.TryStartConstruction(brokeState, BuildingCatalog.FisheryId) &&
+      brokeSettlement.Buildings.Count == 0,
+    "Catalogue construction rejects unaffordable buildings without side effects");
+
 Console.WriteLine("All smoke tests passed.");
