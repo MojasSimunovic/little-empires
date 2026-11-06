@@ -31,6 +31,7 @@ public sealed class IslandMap
     public int Height { get; }
     public IReadOnlyList<IslandTile> Tiles => _allTiles;
     public IReadOnlyDictionary<GridPosition, Building> OccupiedSites => _readOnlyOccupants;
+    public IslandRoadNetwork Roads { get; }
 
     public IslandMap(int width, int height, IEnumerable<IslandTile> tiles)
     {
@@ -63,6 +64,7 @@ public sealed class IslandMap
 
         _allTiles = collected.AsReadOnly();
         _readOnlyOccupants = new ReadOnlyDictionary<GridPosition, Building>(_occupants);
+        Roads = new IslandRoadNetwork(this);
     }
 
     public bool Contains(GridPosition position) =>
@@ -110,7 +112,7 @@ public sealed class IslandMap
     {
         ArgumentNullException.ThrowIfNull(building);
         if (!Contains(position) || GetTile(position).Terrain == TerrainKind.Water ||
-            !_occupants.TryAdd(position, building))
+            Roads.HasRoad(position) || !_occupants.TryAdd(position, building))
             throw new InvalidOperationException("The chosen island tile is unavailable.");
     }
 }
