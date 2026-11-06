@@ -9,6 +9,7 @@ This is an **initial balance proposal**, not a final economy. The catalogue live
 | Quarry | `quarry` | 20 wood + 15 coins | 2 | +4 stone |
 | Farm | `farm` | 25 wood + 5 stone + 12 coins | 2 | +9 food |
 | Cottage | `cottage` | 18 wood + 5 stone + 10 coins | 1 | +6 housing slots |
+| Townhouse | `townhouse` | Upgrade-only; see below | 2-season upgrade | 12 total housing slots (replaces Cottage) |
 
 ## Gameplay reasoning
 
@@ -17,6 +18,7 @@ This is an **initial balance proposal**, not a final economy. The catalogue live
 - **Lumber Camp:** renewable construction material once built.
 - **Quarry:** provides stone for expanding settlements.
 - **Cottage:** expands housing capacity; does not produce resources.
+- **Townhouse:** denser housing that replaces an existing completed Cottage in place.
 
 ## Current simulation rules
 - Building construction **does not use strategic action points**.
@@ -26,9 +28,12 @@ This is an **initial balance proposal**, not a final economy. The catalogue live
 - If there is not enough food, inventory stops at zero and the turn report records the deficit.
 - The founding residents start with exactly enough housing for themselves; no spare capacity.
 - Cottages add six housing slots **only when construction completes**. Immigration happens after construction progress, allowing the first arrivals in the completion season.
+- A completed Cottage can be upgraded to a Townhouse for **24 wood, 10 stone and 20 coins**. The upgrade takes **2 seasons** and costs are paid upfront. A Cottage keeps its 6 slots while upgrading; on completion it becomes a Townhouse with 12 slots (**+6 net**, not +12). It cannot be upgraded again.
+- Townhouses are **not directly buildable**; their definition is a target for the upgrade system. Upgrade orders use the building index for now, until world-object IDs exist.
 - Immigration brings at most two residents per season, limited by free housing and food remaining after feeding existing residents (at least one surplus food per arrival). Immigration does not consume food; arrivals eat from the following season.
 - No immigration during food shortages; shortages do not reduce population yet.
-- Terrain, adjacency, workers, upkeep, storage limits, seasonal modifiers and population happiness are not yet implemented.
+- Happiness affects immigration: below 50 none, 50–69 at most 1, 70+ at most 2; shortages block it entirely.
+- Terrain, adjacency, workers, upkeep, storage limits, seasonal modifiers and housing-quality demand are not yet implemented.
 - The values above may change after playtesting.
 
 ## Example
