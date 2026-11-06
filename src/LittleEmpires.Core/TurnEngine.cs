@@ -18,18 +18,24 @@ public sealed record TurnSummary(
     int StartingHappiness,
     int Happiness,
     int HappinessChange,
-    IReadOnlyList<string> CompletedUpgrades);
+    IReadOnlyList<string> CompletedUpgrades,
+    int TaxIncome,
+    int OperatingCosts,
+    int WorkingResidents,
+    int UnemployedResidents,
+    IReadOnlyDictionary<Resource, int> GrossProduction);
 
 /// <summary>
-/// Resolves one season: production, food consumption, construction/upgrades, happiness,
-/// immigration, then calendar advancement. New buildings produce from the next turn.
+/// Resolves a strategic season: taxes, workforce/upkeep, production, food,
+/// construction/upgrades, happiness, immigration, then calendar advancement. New buildings produce from the next turn.
 /// </summary>
 public sealed class TurnEngine
 {
     private readonly PopulationGrowthSystem _growth = new();
     private readonly SettlementHappinessSystem _happiness = new();
 
-    public TurnSummary EndTurn(GameState state, Settlement settlement)
+    public TurnSummary EndTurn(GameState state, Settlement settlement,
+        IslandMap? island = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(settlement);
@@ -44,8 +50,20 @@ public sealed class TurnEngine
             .Where(building => !building.IsComplete)
             .ToHashSet();
 
-        // Order is intentional: existing production can feed residents this turn.
-        settlement.Produce(state);
+        // Taxes use the starting population, before new immigrants arrive.
+        var taxIncome = settlement.EconomyMode == EconomyMode.Strategic
+            ? TaxationSystem.Collect(state, startingPopulation, settlement.TaxPolicy)
+            : 0;
+
+        // With Strategic rules, buildings must have available workers and be
+        // able to pay upkeep. Classic mode retains old prototype benchmarks.
+        var staffing = settlement.EconomyMode == EconomyMode.Strategic
+            ? WorkforceSystem.Resolve(state, settlement)
+            : WorkforceSystem.Classic(settlement);
+
+        // Existing production feeds current residents this season. Newly
+        // completed structures begin generating output next season.
+        var production = ProductionSystem.Resolve(state, settlement, island, staffing);
         var foodRequired = startingPopulation;
         var foodConsumed = Math.Min(foodRequired, state.Get(Resource.Food));
         if (foodConsumed > 0)
@@ -53,11 +71,17 @@ public sealed class TurnEngine
         var foodShortage = foodRequired - foodConsumed;
         settlement.ProgressConstruction();
         var completedUpgrades = settlement.ProgressUpgrades();
-        var happinessChange = _happiness.ResolveSeason(settlement, foodShortage);
+        var taxHappiness = settlement.EconomyMode == EconomyMode.Strategic
+            ? TaxationSystem.Effects(settlement.TaxPolicy).HappinessPerSeason
+            : 0;
+        var happinessChange = _happiness.ResolveSeason(
+            settlement, foodShortage, taxHappiness);
         // New residents arrive after current residents have eaten. They start
         // consuming food on the following seasonal turn.
         var newResidents = _growth.ResolveImmigration(state, settlement, foodShortage);
         state.AdvanceSeason();
+        // New season means fresh per-Marketplace trade limits.
+        settlement.ResetTradeQuotas();
 
         var changes = Enum.GetValues<Resource>()
             .ToDictionary(resource => resource, resource => state.Get(resource) - before[resource]);
@@ -72,6 +96,8 @@ public sealed class TurnEngine
             foodRequired, foodConsumed, foodShortage,
             startingPopulation, newResidents, settlement.HousingCapacity,
             startingHappiness, settlement.Happiness, happinessChange,
-            completedUpgrades);
+            completedUpgrades, taxIncome, staffing.OperatingCosts,
+            staffing.WorkingResidents, staffing.UnemployedResidents,
+            production.Produced);
     }
 }
