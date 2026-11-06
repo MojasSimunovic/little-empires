@@ -51,7 +51,7 @@ public static class BuildingPlacementRules
             return new PlacementResult(PlacementFailure.AlreadyOccupied);
 
         var flatLand = tile.Terrain is TerrainKind.Grassland or TerrainKind.FertileLand;
-        var failure = definition.PlacementRequirement switch
+        var failure = definition.SiteRequirement switch
         {
             PlacementRequirement.FlatLand =>
                 flatLand ? PlacementFailure.None : PlacementFailure.RequiresFlatLand,
