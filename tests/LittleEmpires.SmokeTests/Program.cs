@@ -758,4 +758,17 @@ Check(roadIsland.Roads.PlaceDirt(approach).Succeeded &&
       roadIsland.Roads.AreBuildingsConnected(townCenter, mountain),
     "Guaranteed grass approach supports a road-connected mountain quarry");
 
+
+var diagonalTiles = Enumerable.Range(0, 3).SelectMany(z =>
+    Enumerable.Range(0, 3).Select(x =>
+        new IslandTile(new GridPosition(x, z), TerrainKind.Grassland)));
+var diagonalIsland = new IslandMap(3, 3, diagonalTiles);
+Check(diagonalIsland.Roads.PlaceDirt(new GridPosition(0, 0)).Succeeded &&
+      diagonalIsland.Roads.PlaceDirt(new GridPosition(1, 1)).Succeeded &&
+      !diagonalIsland.Roads.AreConnected(new GridPosition(0, 0), new GridPosition(1, 1)),
+    "Diagonally touching road segments are not connected");
+Check(diagonalIsland.Roads.PlaceDirt(new GridPosition(0, 1)).Succeeded &&
+      diagonalIsland.Roads.AreConnected(new GridPosition(0, 0), new GridPosition(1, 1)),
+    "Orthogonal connector closes a diagonal gap");
+
 Console.WriteLine("All smoke tests passed.");
