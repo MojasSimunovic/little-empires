@@ -35,3 +35,11 @@ jobs:
         run: dotnet run --project src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --no-build -- happiness 8
       - name: Run eight-season townhouse upgrade scenario
         run: dotnet run --project src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --no-build -- upgrade 8
+
+      - name: Check Three.js demo module syntax
+        run: |
+          node --check demo/engine.mjs
+          node --check demo/main.mjs
+          node --check demo/test-engine.mjs
+      - name: Verify Three.js game rules against C# benchmarks
+        run: node demo/test-engine.mjs
