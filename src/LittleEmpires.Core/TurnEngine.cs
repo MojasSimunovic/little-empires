@@ -7,7 +7,11 @@ public sealed record TurnSummary(
     int EndingYear,
     Season EndingSeason,
     IReadOnlyDictionary<Resource, int> ResourceChanges,
-    IReadOnlyList<string> CompletedBuildings);
+    IReadOnlyList<string> CompletedBuildings,
+    int Population,
+    int FoodRequired,
+    int FoodConsumed,
+    int FoodShortage);
 
 /// <summary>
 /// Resolves one season. Settlement handles production and construction before
@@ -28,7 +32,15 @@ public sealed class TurnEngine
             .Where(building => !building.IsComplete)
             .ToHashSet();
 
-        settlement.ResolveSeason(state);
+        // Order is intentional: existing production can feed residents this turn.
+        settlement.Produce(state);
+        var foodRequired = settlement.Population;
+        var foodConsumed = Math.Min(foodRequired, state.Get(Resource.Food));
+        if (foodConsumed > 0)
+            state.TrySpend(new Dictionary<Resource, int> { [Resource.Food] = foodConsumed });
+        var foodShortage = foodRequired - foodConsumed;
+        settlement.ProgressConstruction();
+        state.AdvanceSeason();
 
         var changes = Enum.GetValues<Resource>()
             .ToDictionary(resource => resource, resource => state.Get(resource) - before[resource]);
@@ -39,6 +51,7 @@ public sealed class TurnEngine
 
         return new TurnSummary(
             startingYear, startingSeason, state.Year, state.Season,
-            changes, completed);
+            changes, completed, settlement.Population,
+            foodRequired, foodConsumed, foodShortage);
     }
 }
