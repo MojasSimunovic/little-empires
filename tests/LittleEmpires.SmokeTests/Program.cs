@@ -153,4 +153,48 @@ Check(!brokeSettlement.TryStartConstruction(brokeState, BuildingCatalog.FisheryI
       brokeSettlement.Buildings.Count == 0,
     "Catalogue construction rejects unaffordable buildings without side effects");
 
+
+var scenarioState = new GameState(wood: 80, stone: 25, food: 12, coins: 100);
+var scenarioSettlement = new Settlement(population: 8);
+var scenarioPlan = new[]
+{
+    new PlannedConstruction(0, BuildingCatalog.FisheryId),
+    new PlannedConstruction(1, BuildingCatalog.FarmId),
+    new PlannedConstruction(3, BuildingCatalog.LumberCampId),
+    new PlannedConstruction(4, BuildingCatalog.QuarryId)
+};
+var scenarioReports = new ScenarioRunner().Run(scenarioState, scenarioSettlement, 8, scenarioPlan);
+Check(scenarioReports.Count == 8, "Scenario runner generates one report per turn");
+Check(scenarioReports.All(report => report.Construction.All(attempt => attempt.Started)),
+    "All scripted construction orders are affordable");
+Check(scenarioReports[0].Construction.Single().BuildingId == BuildingCatalog.FisheryId &&
+      scenarioReports[0].Turn.CompletedBuildings.Contains("Fishery"),
+    "Scripted Fishery starts and finishes on first turn");
+Check(scenarioReports[2].Turn.FoodShortage == 2 &&
+      scenarioReports[2].EndingResources[Resource.Food] == 0,
+    "Scripted scenario experiences temporary food shortage");
+Check(scenarioReports[3].Turn.FoodShortage == 0 &&
+      scenarioReports[3].Turn.ResourceChanges[Resource.Food] == 6,
+    "Farm production allows food supply to recover");
+Check(scenarioReports.Sum(report => report.Turn.FoodShortage) == 2,
+    "Total food shortage is deterministic");
+Check(scenarioState.Get(Resource.Wood) == 26 &&
+      scenarioState.Get(Resource.Stone) == 25 &&
+      scenarioState.Get(Resource.Food) == 30 &&
+      scenarioState.Get(Resource.Coins) == 55,
+    "Two-year scenario ends with expected resource balances");
+Check(scenarioState.Year == 3 && scenarioState.Season == Season.Spring,
+    "Eight seasonal turns advance exactly two years");
+Check(scenarioReports[0].EndingResources[Resource.Wood] == 68 &&
+      scenarioReports[7].EndingResources[Resource.Wood] == 26,
+    "Season reports preserve historical stockpile snapshots");
+
+var unaffordableScenario = new ScenarioRunner().Run(
+    new GameState(wood: 0, stone: 0, food: 0, coins: 0),
+    new Settlement(), 1,
+    new[] { new PlannedConstruction(0, BuildingCatalog.FisheryId) });
+Check(unaffordableScenario[0].Construction.Count == 1 &&
+      !unaffordableScenario[0].Construction[0].Started,
+    "Scenario runner reports failed construction attempts");
+
 Console.WriteLine("All smoke tests passed.");
