@@ -20,7 +20,13 @@ To run the new **housing and immigration** scenario, use:
 dotnet run --project src/LittleEmpires.Simulator -- growth 8
 ```
 
-The GitHub Actions workflow builds and executes **both** scenarios even if you cannot install .NET locally. Open the latest `C# Core CI` run, select the job, and expand **Run eight-season economy scenario** or **Run eight-season housing and immigration scenario** to view the printed report.
+To run the **happiness and recovery** scenario, use:
+
+```bash
+dotnet run --project src/LittleEmpires.Simulator -- happiness 8
+```
+
+The GitHub Actions workflow builds and executes **all three** scenarios even if you cannot install .NET locally. Open the latest `C# Core CI` run, select the job, and expand any **Run eight-season ... scenario** step to view the printed report.
 
 ## Default scenario
 
@@ -68,9 +74,38 @@ Expected final stockpile: **26 wood, 25 stone, 30 food, 55 coins**. Expected fin
 
 Expected final stockpile: **25 wood, 12 stone, 10 food, 70 coins**. Six immigrants in total; no food shortages. These are deterministic, provisional test expectations.
 
+## Happiness and recovery scenario (LE-017)
+
+- Starts with **8 residents**, **75 happiness**, and **0 food**. The building plan matches the growth scenario.
+- The initial food shortages lower happiness; even after food production recovers, immigration stays paused until happiness reaches 50.
+- When happiness is 50–69, at most **one** resident can immigrate per season; at 70+, up to **two** can immigrate, subject to food and housing.
+- This is a first-pass mechanic with fixed per-season adjustments, not a simulation of individual residents.
+
+| Turn | Season | Food shortage | End happiness | End population | New residents |
+|---:|---|---:|---:|---:|---:|
+| 1 | Spring, Year 1 | 8 | 64 | 8 | 0 |
+| 2 | Summer, Year 1 | 3 | 53 | 8 | 0 |
+| 3 | Autumn, Year 1 | 3 | 42 | 8 | 0 |
+| 4 | Winter, Year 1 | 0 | 45 | 8 | 0 |
+| 5 | Spring, Year 2 | 0 | 48 | 8 | 0 |
+| 6 | Summer, Year 2 | 0 | 51 | 9 | 1 |
+| 7 | Autumn, Year 2 | 0 | 54 | 10 | 1 |
+| 8 | Winter, Year 2 | 0 | 57 | 11 | 1 |
+
+Expected total food shortage: **14**. Expected final food: **27**, population **11**, happiness **57**.
+
+### Happiness rules
+
+- Starts at **70** by default (the recovery scenario deliberately starts at 75).
+- A season with enough food: **+2**; any food shortage: **−12**.
+- At least one unoccupied completed housing slot: **+1**; no available housing: **−1**.
+- Happiness is clamped to **0–100** and calculated **after** construction completes but **before** immigration.
+- A food shortage always blocks immigration, regardless of happiness. Food and housing constraints continue to apply.
+- The penalty is currently fixed per shortage season, not proportional to missing food.
+
 ## Current limitations
 
-- No map or terrain, worker assignments, advanced housing upgrades, trade, or AI rivals.
+- No map or terrain, worker assignments, advanced housing upgrades, services, trade, or AI rivals.
 - Food shortages are reported but do not reduce population. Food security uses a simple one-surplus-food-per-newcomer rule, not a forecast of next season's needs.
 - Building production and consumption are currently constant across seasons.
 - The scenario is scripted rather than an autonomous economic AI.
