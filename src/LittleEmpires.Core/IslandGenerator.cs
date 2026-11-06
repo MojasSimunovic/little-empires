@@ -46,7 +46,11 @@ public static class IslandGenerator
         }
 
         // Guaranteed opportunities, independent of the random roll.
+        // Preserve a flat approach from the settlement to the guaranteed
+        // mountain. Future road networks can use this corridor.
         terrain[centerX + 2, centerZ - 1] = TerrainKind.Mountain;
+        terrain[centerX + 1, centerZ] = TerrainKind.Grassland;
+        terrain[centerX + 1, centerZ - 1] = TerrainKind.Grassland;
         terrain[centerX - 2, centerZ] = TerrainKind.Forest;
         terrain[centerX - 1, centerZ] = TerrainKind.Grassland;
         terrain[centerX, centerZ + 1] = TerrainKind.FertileLand;
