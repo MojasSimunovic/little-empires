@@ -85,7 +85,7 @@ public sealed class Settlement
     public int Population { get; private set; }
     public int Happiness { get; private set; }
     public EconomyMode EconomyMode { get; }
-    public TaxPolicy TaxPolicy { get; private set; } = TaxPolicy.Normal;
+    public TaxPolicy TaxPolicy { get; private set; } = LittleEmpires.Core.TaxPolicy.Normal;
 
     // The founding residents already have homes, but no spare housing.
     public int StartingHousingCapacity { get; }
