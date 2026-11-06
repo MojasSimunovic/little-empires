@@ -34,7 +34,7 @@ foreach (var report in reports)
     Console.WriteLine($"Turn {report.TurnIndex + 1,2} | Year {turn.StartingYear} {turn.StartingSeason,-6} " +
         $"| Wood {stock[Resource.Wood],3} | Stone {stock[Resource.Stone],3} " +
         $"| Food {stock[Resource.Food],3} | Coins {stock[Resource.Coins],3} " +
-        $"| Food change {turn.ResourceChanges[Resource.Food],+3;-3; 0} " +
+        $"| Food change {turn.ResourceChanges[Resource.Food],3:+0;-0;0} " +
         $"| Shortage {turn.FoodShortage}");
 
     foreach (var attempt in report.Construction)
