@@ -90,13 +90,13 @@ catch (ArgumentOutOfRangeException)
 
 
 var definitions = BuildingCatalog.All;
-Check(definitions.Count == 4, "Catalogue contains four starter buildings");
-Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 4,
+Check(definitions.Count == 5, "Catalogue contains four producers and one cottage");
+Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 5,
     "Every catalogue building has a unique ID");
 foreach (var definition in definitions)
 {
     definition.Validate();
-    Check(definition.ProductionPerSeason.Count > 0 &&
+    Check((definition.ProductionPerSeason.Count > 0 || definition.HousingCapacity > 0) &&
           definition.ConstructionSeasons >= 1, $"{definition.Name} definition is valid");
 }
 Check(BuildingCatalog.TryGet("FARM", out var selectedFarm) &&
@@ -118,7 +118,7 @@ catch (KeyNotFoundException)
 
 var catalogueState = new GameState(wood: 200, stone: 100, food: 0, coins: 100);
 var catalogueSettlement = new Settlement();
-foreach (var definition in definitions)
+foreach (var definition in definitions.Where(building => building.HousingCapacity == 0))
     Check(catalogueSettlement.TryStartConstruction(catalogueState, definition.Id),
         $"{definition.Name} can be built by catalogue ID");
 Check(catalogueState.Get(Resource.Wood) == 128 &&
@@ -196,5 +196,104 @@ var unaffordableScenario = new ScenarioRunner().Run(
 Check(unaffordableScenario[0].Construction.Count == 1 &&
       !unaffordableScenario[0].Construction[0].Started,
     "Scenario runner reports failed construction attempts");
+
+
+var cottage = BuildingCatalog.Get(BuildingCatalog.CottageId);
+Check(cottage.HousingCapacity == 6 && cottage.ProductionPerSeason.Count == 0 &&
+      cottage.ConstructionSeasons == 1,
+    "Cottage provides six housing slots and no resources");
+Check(cottage.Cost[Resource.Wood] == 18 &&
+      cottage.Cost[Resource.Stone] == 5 &&
+      cottage.Cost[Resource.Coins] == 10,
+    "Cottage has the expected construction costs");
+
+var housingState = new GameState(food: 20);
+var housingVillage = new Settlement(population: 8);
+Check(housingVillage.HousingCapacity == 8 && housingVillage.AvailableHousing == 0,
+    "Founding residents have housing but no spare capacity");
+Check(housingVillage.TryStartConstruction(housingState, BuildingCatalog.CottageId),
+    "Cottage construction starts");
+Check(housingVillage.HousingCapacity == 8,
+    "Unfinished cottage provides no housing capacity");
+var firstImmigration = engine.EndTurn(housingState, housingVillage);
+Check(firstImmigration.CompletedBuildings.Contains("Cottage") &&
+      firstImmigration.HousingCapacity == 14,
+    "Completed cottage immediately increases housing capacity");
+Check(firstImmigration.StartingPopulation == 8 &&
+      firstImmigration.Population == 10 &&
+      firstImmigration.NewResidents == 2,
+    "Two residents immigrate after housing completes");
+Check(firstImmigration.FoodRequired == 8 &&
+      firstImmigration.FoodConsumed == 8 &&
+      housingState.Get(Resource.Food) == 12,
+    "New immigrants do not consume food on arrival turn");
+
+var secondImmigration = engine.EndTurn(housingState, housingVillage);
+Check(secondImmigration.FoodRequired == 10 &&
+      secondImmigration.NewResidents == 2 &&
+      secondImmigration.Population == 12,
+    "New arrivals consume food starting next season");
+var shortageImmigration = engine.EndTurn(housingState, housingVillage);
+Check(shortageImmigration.FoodShortage == 10 &&
+      shortageImmigration.NewResidents == 0 &&
+      housingVillage.Population == 12,
+    "Food shortage blocks immigration without reducing population");
+
+var foodLimitedState = new GameState(food: 9);
+var foodLimitedVillage = new Settlement(population: 8);
+Check(foodLimitedVillage.TryStartConstruction(foodLimitedState, BuildingCatalog.CottageId),
+    "Food-limited settlement starts a cottage");
+var foodLimitedTurn = engine.EndTurn(foodLimitedState, foodLimitedVillage);
+Check(foodLimitedTurn.NewResidents == 1 &&
+      foodLimitedTurn.Population == 9 &&
+      foodLimitedState.Get(Resource.Food) == 1,
+    "Only one resident immigrates with one food of surplus");
+
+var cappedState = new GameState(food: 100);
+var cappedVillage = new Settlement(population: 8);
+Check(cappedVillage.TryStartConstruction(cappedState, BuildingCatalog.CottageId),
+    "Housing-capacity settlement starts a cottage");
+var cappedTurns = Enumerable.Range(0, 4)
+    .Select(_ => engine.EndTurn(cappedState, cappedVillage)).ToArray();
+Check(cappedTurns.Select(turn => turn.NewResidents).SequenceEqual(new[] { 2, 2, 2, 0 }) &&
+      cappedVillage.Population == 14 && cappedVillage.HousingCapacity == 14,
+    "Immigration stops at housing capacity and never exceeds two per season");
+
+var noHousingState = new GameState(food: 100);
+var noHousingVillage = new Settlement(population: 8);
+Check(engine.EndTurn(noHousingState, noHousingVillage).NewResidents == 0,
+    "Food surplus alone cannot grow population without housing");
+try
+{
+    noHousingVillage.SetPopulation(9);
+    throw new Exception("Population was allowed to exceed housing capacity");
+}
+catch (ArgumentOutOfRangeException)
+{
+    Console.WriteLine("PASS: Population cannot exceed housing capacity");
+}
+
+var growthState = new GameState(wood: 80, stone: 25, food: 30, coins: 100);
+var growthVillage = new Settlement(population: 8);
+var growthPlan = new[]
+{
+    new PlannedConstruction(0, BuildingCatalog.CottageId),
+    new PlannedConstruction(0, BuildingCatalog.FisheryId),
+    new PlannedConstruction(1, BuildingCatalog.FarmId)
+};
+var growthReports = new ScenarioRunner().Run(growthState, growthVillage, 8, growthPlan);
+Check(growthReports.All(report => report.Construction.All(attempt => attempt.Started)),
+    "Growth scenario can afford its planned buildings");
+Check(growthReports.Select(report => report.Turn.Population)
+      .SequenceEqual(new[] { 10, 12, 14, 14, 14, 14, 14, 14 }),
+    "Growth scenario reaches housing capacity after three seasons");
+Check(growthReports.Sum(report => report.Turn.NewResidents) == 6 &&
+      growthReports.All(report => report.Turn.FoodShortage == 0),
+    "Growth scenario attracts six residents without shortages");
+Check(growthState.Get(Resource.Wood) == 25 &&
+      growthState.Get(Resource.Stone) == 12 &&
+      growthState.Get(Resource.Food) == 10 &&
+      growthState.Get(Resource.Coins) == 70,
+    "Growth scenario ends with expected stockpile after eight seasons");
 
 Console.WriteLine("All smoke tests passed.");
