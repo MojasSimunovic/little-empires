@@ -29,3 +29,5 @@ jobs:
         run: dotnet build src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --warnaserror
       - name: Run eight-season economy scenario
         run: dotnet run --project src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --no-build -- 8
+      - name: Run eight-season housing and immigration scenario
+        run: dotnet run --project src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --no-build -- growth 8
