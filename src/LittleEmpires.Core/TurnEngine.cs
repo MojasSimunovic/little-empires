@@ -11,14 +11,19 @@ public sealed record TurnSummary(
     int Population,
     int FoodRequired,
     int FoodConsumed,
-    int FoodShortage);
+    int FoodShortage,
+    int StartingPopulation,
+    int NewResidents,
+    int HousingCapacity);
 
 /// <summary>
-/// Resolves one season. Settlement handles production and construction before
-/// GameState advances the calendar. New buildings produce from the next turn.
+/// Resolves one season: production, food consumption, construction, immigration,
+/// then calendar advancement. New buildings produce from the next turn.
 /// </summary>
 public sealed class TurnEngine
 {
+    private readonly PopulationGrowthSystem _growth = new();
+
     public TurnSummary EndTurn(GameState state, Settlement settlement)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -26,6 +31,7 @@ public sealed class TurnEngine
 
         var startingYear = state.Year;
         var startingSeason = state.Season;
+        var startingPopulation = settlement.Population;
         var before = Enum.GetValues<Resource>()
             .ToDictionary(resource => resource, state.Get);
         var incomplete = settlement.Buildings
@@ -34,12 +40,15 @@ public sealed class TurnEngine
 
         // Order is intentional: existing production can feed residents this turn.
         settlement.Produce(state);
-        var foodRequired = settlement.Population;
+        var foodRequired = startingPopulation;
         var foodConsumed = Math.Min(foodRequired, state.Get(Resource.Food));
         if (foodConsumed > 0)
             state.TrySpend(new Dictionary<Resource, int> { [Resource.Food] = foodConsumed });
         var foodShortage = foodRequired - foodConsumed;
         settlement.ProgressConstruction();
+        // New residents arrive after current residents have eaten. They start
+        // consuming food on the following seasonal turn.
+        var newResidents = _growth.ResolveImmigration(state, settlement, foodShortage);
         state.AdvanceSeason();
 
         var changes = Enum.GetValues<Resource>()
@@ -52,6 +61,7 @@ public sealed class TurnEngine
         return new TurnSummary(
             startingYear, startingSeason, state.Year, state.Season,
             changes, completed, settlement.Population,
-            foodRequired, foodConsumed, foodShortage);
+            foodRequired, foodConsumed, foodShortage,
+            startingPopulation, newResidents, settlement.HousingCapacity);
     }
 }
