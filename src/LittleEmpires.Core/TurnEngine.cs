@@ -17,10 +17,11 @@ public sealed record TurnSummary(
     int HousingCapacity,
     int StartingHappiness,
     int Happiness,
-    int HappinessChange);
+    int HappinessChange,
+    IReadOnlyList<string> CompletedUpgrades);
 
 /// <summary>
-/// Resolves one season: production, food consumption, construction, happiness,
+/// Resolves one season: production, food consumption, construction/upgrades, happiness,
 /// immigration, then calendar advancement. New buildings produce from the next turn.
 /// </summary>
 public sealed class TurnEngine
@@ -51,6 +52,7 @@ public sealed class TurnEngine
             state.TrySpend(new Dictionary<Resource, int> { [Resource.Food] = foodConsumed });
         var foodShortage = foodRequired - foodConsumed;
         settlement.ProgressConstruction();
+        var completedUpgrades = settlement.ProgressUpgrades();
         var happinessChange = _happiness.ResolveSeason(settlement, foodShortage);
         // New residents arrive after current residents have eaten. They start
         // consuming food on the following seasonal turn.
@@ -69,6 +71,7 @@ public sealed class TurnEngine
             changes, completed, settlement.Population,
             foodRequired, foodConsumed, foodShortage,
             startingPopulation, newResidents, settlement.HousingCapacity,
-            startingHappiness, settlement.Happiness, happinessChange);
+            startingHappiness, settlement.Happiness, happinessChange,
+            completedUpgrades);
     }
 }
