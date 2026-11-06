@@ -8,13 +8,17 @@ public sealed record BuildingDefinition(
     IReadOnlyDictionary<Resource, int> ProductionPerSeason,
     int HousingCapacity = 0,
     bool CanBuildDirectly = true,
-    PlacementRequirement SiteRequirement = PlacementRequirement.FlatLand)
+    PlacementRequirement SiteRequirement = PlacementRequirement.FlatLand,
+    int WorkersRequired = 0,
+    int UpkeepCoinsPerSeason = 0)
 {
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(Id)) throw new ArgumentException("Building ID is required.");
         if (ConstructionSeasons < 1) throw new ArgumentOutOfRangeException(nameof(ConstructionSeasons));
         if (HousingCapacity < 0) throw new ArgumentOutOfRangeException(nameof(HousingCapacity));
+        if (WorkersRequired < 0) throw new ArgumentOutOfRangeException(nameof(WorkersRequired));
+        if (UpkeepCoinsPerSeason < 0) throw new ArgumentOutOfRangeException(nameof(UpkeepCoinsPerSeason));
         if (!Enum.IsDefined(SiteRequirement)) throw new ArgumentOutOfRangeException(nameof(SiteRequirement));
         if (Cost.Values.Any(v => v < 0) || ProductionPerSeason.Values.Any(v => v < 0))
             throw new ArgumentException("Building amounts cannot be negative.");
@@ -25,6 +29,7 @@ public sealed class Building
 {
     public BuildingDefinition Definition { get; private set; }
     public GridPosition? Position { get; }
+    public int WorkPriority { get; private set; }
     public int SeasonsRemaining { get; private set; }
     public bool IsComplete => SeasonsRemaining == 0;
     public int UpgradeSeasonsRemaining { get; private set; }
@@ -43,6 +48,8 @@ public sealed class Building
     {
         if (SeasonsRemaining > 0) SeasonsRemaining--;
     }
+
+    internal void SetWorkPriority(int priority) => WorkPriority = priority;
 
     internal void StartUpgrade(BuildingUpgradeDefinition upgrade)
     {
@@ -71,6 +78,8 @@ public sealed class Settlement
     public IReadOnlyList<Building> Buildings => _buildings;
     public int Population { get; private set; }
     public int Happiness { get; private set; }
+    public EconomyMode EconomyMode { get; }
+    public TaxPolicy TaxPolicy { get; private set; } = TaxPolicy.Normal;
 
     // The founding residents already have homes, but no spare housing.
     public int StartingHousingCapacity { get; }
@@ -79,15 +88,33 @@ public sealed class Settlement
             .Sum(building => building.Definition.HousingCapacity));
     public int AvailableHousing => Math.Max(0, HousingCapacity - Population);
 
-    public Settlement(int population = 0, int happiness = 70)
+    public Settlement(int population = 0, int happiness = 70,
+        EconomyMode economyMode = EconomyMode.Classic)
     {
         if (population < 0) throw new ArgumentOutOfRangeException(nameof(population));
         if (happiness < 0 || happiness > 100)
             throw new ArgumentOutOfRangeException(nameof(happiness),
                 "Happiness must be between 0 and 100.");
+        if (!Enum.IsDefined(economyMode))
+            throw new ArgumentOutOfRangeException(nameof(economyMode));
         StartingHousingCapacity = population;
         Population = population;
         Happiness = happiness;
+        EconomyMode = economyMode;
+    }
+
+    public void SetTaxPolicy(TaxPolicy policy)
+    {
+        if (!Enum.IsDefined(policy)) throw new ArgumentOutOfRangeException(nameof(policy));
+        TaxPolicy = policy;
+    }
+
+    public bool SetWorkPriority(int buildingIndex, int priority)
+    {
+        if (buildingIndex < 0 || buildingIndex >= _buildings.Count ||
+            priority is < -10 or > 10) return false;
+        _buildings[buildingIndex].SetWorkPriority(priority);
+        return true;
     }
 
     internal int AdjustHappiness(int amount)
