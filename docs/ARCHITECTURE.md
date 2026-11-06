@@ -11,7 +11,10 @@ Unity 6 is the target engine. The core simulation is written in plain C# without
 - Newly completed buildings start producing in the **following** season.
 - Production from completed buildings is resolved before advancing construction.
 - The first slice uses wood, stone, food, and coins.
-- Strategic actions, diplomacy, Council, consumption and trade will be introduced in later tickets.
+- The turn pipeline is: existing-building production → population food consumption → construction progress → calendar advancement → turn summary.
+- Food consumption is one food per resident per season. Food shortages are reported but do not change population yet.
+- Building definitions and provisional balance values live in `BuildingCatalog` (see [BUILDINGS.md](BUILDINGS.md)).
+- Strategic actions, diplomacy, Council, terrain constraints, and trade will be introduced in later tickets.
 
 ## Layout
 - `src/LittleEmpires.Core`: Unity-independent C# simulation.
