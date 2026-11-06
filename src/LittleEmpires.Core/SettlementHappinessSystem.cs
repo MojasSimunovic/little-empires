@@ -12,7 +12,8 @@ public sealed class SettlementHappinessSystem
     public const int FullHousingPenalty = -1;
 
     /// <returns>The actual happiness change after clamping to 0..100.</returns>
-    public int ResolveSeason(Settlement settlement, int foodShortage)
+    public int ResolveSeason(Settlement settlement, int foodShortage,
+        int additionalHappinessChange = 0)
     {
         ArgumentNullException.ThrowIfNull(settlement);
         if (foodShortage < 0) throw new ArgumentOutOfRangeException(nameof(foodShortage));
@@ -22,6 +23,7 @@ public sealed class SettlementHappinessSystem
         var housingEffect = settlement.AvailableHousing > 0
             ? SpareHousingBonus
             : FullHousingPenalty;
-        return settlement.AdjustHappiness(foodEffect + housingEffect);
+        return settlement.AdjustHappiness(checked(foodEffect + housingEffect +
+            additionalHappinessChange));
     }
 }
