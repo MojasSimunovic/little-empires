@@ -36,6 +36,9 @@ jobs:
       - name: Run eight-season townhouse upgrade scenario
         run: dotnet run --project src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --no-build -- upgrade 8
 
+      - name: Run eight-season strategic economy scenario
+        run: dotnet run --project src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --no-build -- strategic 8
+
       - name: Check Three.js demo module syntax
         run: |
           node --check demo/engine.mjs
