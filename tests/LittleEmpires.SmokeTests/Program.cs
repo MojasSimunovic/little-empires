@@ -90,13 +90,15 @@ catch (ArgumentOutOfRangeException)
 
 
 var definitions = BuildingCatalog.All;
-Check(definitions.Count == 6, "Catalogue contains four producers, Cottage, and upgrade-only Townhouse");
-Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 6,
+Check(definitions.Count == 9, "Catalogue contains four producers, housing, processors and Marketplace");
+Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 9,
     "Every catalogue building has a unique ID");
 foreach (var definition in definitions)
 {
     definition.Validate();
-    Check((definition.ProductionPerSeason.Count > 0 || definition.HousingCapacity > 0) &&
+    Check((definition.ProductionPerSeason.Count > 0 || definition.HousingCapacity > 0 ||
+          definition.Id is BuildingCatalog.LumberMillId or
+              BuildingCatalog.FoodProcessorId or BuildingCatalog.MarketplaceId) &&
           definition.ConstructionSeasons >= 1, $"{definition.Name} definition is valid");
 }
 Check(BuildingCatalog.TryGet("FARM", out var selectedFarm) &&
@@ -118,7 +120,7 @@ catch (KeyNotFoundException)
 
 var catalogueState = new GameState(wood: 200, stone: 100, food: 0, coins: 100);
 var catalogueSettlement = new Settlement();
-foreach (var definition in definitions.Where(building => building.HousingCapacity == 0))
+foreach (var definition in definitions.Where(building => building.ProductionPerSeason.Count > 0))
     Check(catalogueSettlement.TryStartConstruction(catalogueState, definition.Id),
         $"{definition.Name} can be built by catalogue ID");
 Check(catalogueState.Get(Resource.Wood) == 128 &&
