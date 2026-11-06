@@ -63,7 +63,7 @@ foreach (var report in reports)
     var stock = report.EndingResources;
     Console.WriteLine($"Turn {report.TurnIndex + 1,2} | Year {turn.StartingYear} {turn.StartingSeason,-6} " +
         $"| Pop {turn.Population,2}/{turn.HousingCapacity,2} (+{turn.NewResidents}) " +
-        $"| Happy {turn.Happiness,3} ({turn.HappinessChange,+3;-3; 0}) " +
+        $"| Happy {turn.Happiness,3} ({turn.HappinessChange,3:+0;-0;0}) " +
         $"| Wood {stock[Resource.Wood],3} | Stone {stock[Resource.Stone],3} " +
         $"| Food {stock[Resource.Food],3} | Coins {stock[Resource.Coins],3} " +
         $"| Food change {turn.ResourceChanges[Resource.Food],3:+0;-0;0} " +
