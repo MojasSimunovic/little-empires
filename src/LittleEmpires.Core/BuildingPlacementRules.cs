@@ -16,6 +16,7 @@ public enum PlacementFailure
     OutsideMap,
     Water,
     AlreadyOccupied,
+    RoadPresent,
     UpgradeOnly,
     RequiresFlatLand,
     RequiresFertileLand,
@@ -49,6 +50,8 @@ public static class BuildingPlacementRules
             return new PlacementResult(PlacementFailure.Water);
         if (island.OccupiedSites.ContainsKey(position))
             return new PlacementResult(PlacementFailure.AlreadyOccupied);
+        if (island.Roads.HasRoad(position))
+            return new PlacementResult(PlacementFailure.RoadPresent);
 
         var flatLand = tile.Terrain is TerrainKind.Grassland or TerrainKind.FertileLand;
         var failure = definition.SiteRequirement switch
