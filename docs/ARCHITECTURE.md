@@ -20,7 +20,8 @@ Unity 6 is the target engine. The core simulation is written in plain C# without
 - Happiness (0–100, starts at 70) rises modestly with food security and spare housing, and falls sharply after food shortages. Immigration requires happiness ≥50; 50–69 allows at most 1 newcomer, 70+ allows at most 2.
 - Building definitions and provisional balance values live in `BuildingCatalog` (see [BUILDINGS.md](BUILDINGS.md)).
 - Spatial terrain, shoreline/forest adjacency, placement checks and occupancy are now available via `IslandMap`, `IslandGenerator` and `BuildingPlacementRules` (see [WORLD_RULES.md](WORLD_RULES.md)). Older simulation scenarios still use the non-spatial constructor overload.
-- Roads, processing, taxes, trade, workforce, strategic actions, diplomacy and Council are next; see [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md).
+- Roads are represented by `IslandMap.Roads`: free dirt-road placement, paid stone-road upgrades, separate occupancy and four-way connectivity to buildings; see [ROADS.md](ROADS.md).
+- Road connections currently have no production effect; processing, taxes, trade, workforce, strategic actions, diplomacy and Council follow; see [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md).
 - Unity integration is a separate compatibility milestone. The current core targets .NET 8 and must not be assumed Unity-assembly compatible yet.
 
 ## Layout
