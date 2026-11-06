@@ -12,6 +12,7 @@ public static class StrategicEconomyTests
         TestWorkforce(check);
         TestProductionChains(check);
         TestMarket(check);
+        TestWorldSession(check);
     }
 
     private static IslandMap World()
@@ -271,4 +272,44 @@ public static class StrategicEconomyTests
               rich.Get(Resource.Stone) == stonesBefore,
             "Market prevents overflow without losing goods");
     }
+    private static void TestWorldSession(Action<bool, string> check)
+    {
+        var session = WorldGameSession.NewStrategicIsland(seed: 42);
+        var original = session.Snapshot();
+        check(session.Settlement.EconomyMode == EconomyMode.Strategic &&
+              original.Population == 8 && original.Year == 1 &&
+              original.Terrain.Count == session.Island.Width * session.Island.Height,
+            "New strategic sessions expose reproducible terrain and settlement snapshots");
+
+        var suitable = session.Island.Tiles.First(tile =>
+            session.PreviewBuilding(tile.Position, BuildingCatalog.QuarryId).Allowed);
+        check(session.PlaceBuilding(suitable.Position, BuildingCatalog.QuarryId),
+            "World session places Quarry through C# placement validation");
+        var postConstruction = session.Snapshot();
+        check(postConstruction.Buildings.Count == 1 &&
+              postConstruction.Buildings[0].Position == suitable.Position &&
+              original.Buildings.Count == 0 &&
+              original.Resources[Resource.Wood] == 120,
+            "World snapshots are independent copies that retain historical inventory");
+        var road = session.Island.Tiles.First(tile =>
+            session.Island.Roads.EvaluateDirtPlacement(tile.Position).Succeeded);
+        check(session.PlaceDirtRoad(road.Position).Succeeded &&
+              session.Snapshot().Roads.Any(segment => segment.Position == road.Position),
+            "Road commands are reflected in world snapshots");
+        var stoneBefore = session.State.Get(Resource.Stone);
+        check(session.UpgradeStoneRoad(road.Position).Succeeded &&
+              session.State.Get(Resource.Stone) == stoneBefore - 2 &&
+              session.Snapshot().Roads.Single(segment =>
+                  segment.Position == road.Position).Surface == RoadSurface.Stone,
+            "Stone road commands update the canonical island network and inventory");
+        session.ChangeTaxes(TaxPolicy.High);
+        var turn = session.EndSeason();
+        check(turn.TaxIncome == 12 && turn.StartingPopulation == 8 &&
+              session.Snapshot().TaxPolicy == TaxPolicy.High &&
+              session.Snapshot().Season == Season.Summer,
+            "World session advances the canonical seasonal turn with tax policy");
+        check(!session.PlaceBuilding(suitable.Position, BuildingCatalog.QuarryId),
+            "World commands reject occupied positions without spending resources");
+    }
+
 }
