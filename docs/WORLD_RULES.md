@@ -26,7 +26,7 @@ The existing non-spatial `Settlement.TryStartConstruction(state, buildingId)` ov
 | Cottage | Flat land | Grassland or fertile land |
 | Townhouse | Upgrade-only | Cannot be directly placed; upgrades its existing Cottage |
 
-All building sites must be inside the map, non-water, and not already occupied by another building. Placing on forest tiles is not yet a deforestation action; forestry uses neighboring land. Dirt and stone roads will have separate spatial rules in LE-021.
+All building sites must be inside the map, non-water, and not already occupied by a building **or a road**. Placing on forest tiles is not yet a deforestation action; forestry uses neighboring land. Dirt and stone roads have their own validated tile layer; see [ROADS.md](ROADS.md).
 
 ## Generation guarantees
 
@@ -62,6 +62,6 @@ Construction costs are deducted up front **only if** both location and inventory
 
 - Existing C# simulation scenarios are not silently converted to spatial gameplay; the new API is opt-in to preserve their test expectations.
 - Spatial commands are single-threaded; future multiplayer/server code will need transactional command processing.
-- Roads, terrain modification, destructible forests, working radius, visual heights, navigation and Unity meshes are not yet built.
+- Dirt roads and stone road upgrades with four-way connectivity are implemented in C#. Roads do not yet modify production, traversal time, or require construction labor. Terrain modification, destructible forests, working radius, visual heights, navigation and Unity meshes are future work.
 - A future save format should store a world/schema version, seed, building positions, costs paid, construction/upgrade progress, resources, and population state. Do **not** silently overwrite existing Three.js browser saves. We will write a separate Unity save migration strategy.
 - The current C# project targets .NET 8. Unity-compatible assembly packaging and API compatibility must be explicitly addressed in **LE-026**, rather than assuming a .NET 8 assembly can be dropped into Unity unchanged.
