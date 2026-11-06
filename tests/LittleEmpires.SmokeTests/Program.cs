@@ -638,4 +638,124 @@ Check(worldSettlement.Buildings[1].Definition.Id == BuildingCatalog.TownhouseId 
       terrainMap.OccupiedSites.Count == 2,
     "Townhouse upgrade preserves site identity without duplicating occupancy");
 
+
+var roadTiles = Enumerable.Range(0, 5)
+    .SelectMany(z => Enumerable.Range(0, 7).Select(x =>
+        new IslandTile(new GridPosition(x, z),
+            x == 0 && z == 0 ? TerrainKind.Water :
+            x == 5 && z == 4 ? TerrainKind.Forest :
+            x == 6 && z == 4 ? TerrainKind.Mountain :
+            TerrainKind.Grassland)));
+var roadMap = new IslandMap(7, 5, roadTiles);
+var roads = roadMap.Roads;
+Check(roads.Segments.Count == 0 && roadMap.Roads == roads,
+    "Island owns one initially empty road network");
+Check(roads.EvaluateDirtPlacement(new GridPosition(-1, 1)).Failure ==
+      RoadFailure.OutsideMap &&
+      roads.PlaceDirt(new GridPosition(-1, 1)).Failure == RoadFailure.OutsideMap,
+    "Road construction rejects outside-map positions");
+Check(roads.PlaceDirt(new GridPosition(0, 0)).Failure == RoadFailure.Water &&
+      roads.PlaceDirt(new GridPosition(5, 4)).Failure == RoadFailure.RequiresFlatLand &&
+      roads.PlaceDirt(new GridPosition(6, 4)).Failure == RoadFailure.RequiresFlatLand &&
+      roads.Segments.Count == 0,
+    "Dirt roads cannot be placed on water, forests or mountains");
+
+var noResources = new GameState(wood: 0, stone: 0, food: 0, coins: 0);
+Check(roads.PlaceDirt(new GridPosition(1, 1)).Succeeded &&
+      roads.Segments[new GridPosition(1, 1)] == RoadSurface.Dirt &&
+      noResources.Get(Resource.Stone) == 0,
+    "Dirt road construction is free even without any resources");
+Check(roads.PlaceDirt(new GridPosition(1, 1)).Failure == RoadFailure.RoadAlreadyPresent,
+    "Dirt roads cannot be placed twice on the same tile");
+Check(roads.EvaluateStoneUpgrade(noResources, new GridPosition(1, 1)).Failure ==
+      RoadFailure.InsufficientStone &&
+      roads.UpgradeToStone(noResources, new GridPosition(1, 1)).Failure ==
+      RoadFailure.InsufficientStone &&
+      roads.Segments[new GridPosition(1, 1)] == RoadSurface.Dirt,
+    "Unaffordable stone upgrade neither consumes resources nor changes road");
+Check(roads.UpgradeToStone(noResources, new GridPosition(3, 3)).Failure ==
+      RoadFailure.RoadMissing &&
+      roads.UpgradeToStone(noResources, new GridPosition(10, 10)).Failure ==
+      RoadFailure.OutsideMap,
+    "Stone upgrades require an existing, in-bounds dirt road");
+
+var roadState = new GameState(wood: 100, stone: 20, food: 100, coins: 100);
+var roadVillage = new Settlement(population: 8);
+var firstHousePosition = new GridPosition(1, 2);
+var secondHousePosition = new GridPosition(4, 2);
+Check(roadVillage.TryStartConstruction(
+        roadState, roadMap, firstHousePosition, BuildingCatalog.CottageId) &&
+      roadVillage.TryStartConstruction(
+        roadState, roadMap, secondHousePosition, BuildingCatalog.CottageId),
+    "Two cottages can be placed on independent land tiles");
+Check(roads.PlaceDirt(firstHousePosition).Failure == RoadFailure.BuildingOccupied &&
+      roads.Segments.Count == 1,
+    "Roads cannot replace an occupied building plot");
+Check(roads.PlaceDirt(new GridPosition(2, 1)).Succeeded &&
+      roads.PlaceDirt(new GridPosition(4, 1)).Succeeded &&
+      roads.PlaceDirt(new GridPosition(2, 0)).Succeeded,
+    "Dirt roads may be painted as disconnected segments and branches");
+Check(!roads.AreConnected(new GridPosition(1, 1), new GridPosition(4, 1)) &&
+      !roads.AreBuildingsConnected(firstHousePosition, secondHousePosition),
+    "Separated road components do not connect buildings");
+Check(roads.IsBuildingRoadConnected(firstHousePosition) &&
+      roads.IsBuildingRoadConnected(secondHousePosition) &&
+      !roads.IsBuildingRoadConnected(new GridPosition(3, 4)),
+    "Road adjacency is reported only for real buildings");
+Check(roads.PlaceDirt(new GridPosition(3, 1)).Succeeded &&
+      roads.AreConnected(new GridPosition(1, 1), new GridPosition(4, 1)) &&
+      roads.AreBuildingsConnected(firstHousePosition, secondHousePosition) &&
+      roads.ConnectedComponent(new GridPosition(1, 1)).Count == 5,
+    "One bridging segment joins road branches and connects the two cottages");
+Check(roads.PlaceDirt(new GridPosition(6, 1)).Succeeded &&
+      !roads.AreConnected(new GridPosition(1, 1), new GridPosition(6, 1)) &&
+      roads.ConnectedComponent(new GridPosition(6, 1)).Count == 1 &&
+      roads.ConnectedComponent(new GridPosition(5, 3)).Count == 0,
+    "Disconnected road islands and missing roads are distinguished");
+Check(roads.AreConnected(new GridPosition(1, 1), new GridPosition(1, 1)) &&
+      !roads.AreConnected(new GridPosition(1, 1), firstHousePosition),
+    "Only actual road positions participate in connectivity");
+
+var blockedRoadPosition = new GridPosition(3, 1);
+var woodBeforeBlocked = roadState.Get(Resource.Wood);
+Check(BuildingPlacementRules.Evaluate(roadMap, blockedRoadPosition, cottageDefinition).Failure ==
+      PlacementFailure.RoadPresent &&
+      !roadVillage.TryStartConstruction(
+          roadState, roadMap, blockedRoadPosition, BuildingCatalog.CottageId) &&
+      roadState.Get(Resource.Wood) == woodBeforeBlocked &&
+      roadVillage.Buildings.Count == 2,
+    "Construction cannot overwrite roads or charge for an invalid building");
+
+var stoneBefore = roadState.Get(Resource.Stone);
+Check(roads.EvaluateStoneUpgrade(roadState, new GridPosition(2, 1)).Succeeded &&
+      roads.UpgradeToStone(roadState, new GridPosition(2, 1)).Succeeded &&
+      roadState.Get(Resource.Stone) == stoneBefore - IslandRoadNetwork.StoneUpgradeCost &&
+      roads.Segments[new GridPosition(2, 1)] == RoadSurface.Stone,
+    "Stone-road upgrades spend exactly two stone and retain their grid location");
+Check(roads.UpgradeToStone(roadState, new GridPosition(2, 1)).Failure ==
+      RoadFailure.AlreadyStone &&
+      roadState.Get(Resource.Stone) == stoneBefore - IslandRoadNetwork.StoneUpgradeCost,
+    "Repeated stone upgrades are rejected without duplicate spending");
+Check(roads.AreBuildingsConnected(firstHousePosition, secondHousePosition),
+    "Upgrading a dirt segment to stone preserves road connectivity");
+
+// The guaranteed mountain approach is connectable without cutting through
+// a mountain, forest or another occupied building.
+var roadIsland = IslandGenerator.Generate(42);
+var mountain = new GridPosition(roadIsland.Width / 2 + 2, roadIsland.Height / 2 - 1);
+var approach = new GridPosition(roadIsland.Width / 2 + 1, roadIsland.Height / 2 - 1);
+var corridor = new GridPosition(roadIsland.Width / 2 + 1, roadIsland.Height / 2);
+var townCenter = new GridPosition(roadIsland.Width / 2, roadIsland.Height / 2);
+var roadIslandState = new GameState(wood: 100, stone: 30, food: 100, coins: 100);
+var roadIslandSettlement = new Settlement(population: 8);
+Check(roadIslandSettlement.TryStartConstruction(
+        roadIslandState, roadIsland, mountain, BuildingCatalog.QuarryId) &&
+      roadIslandSettlement.TryStartConstruction(
+        roadIslandState, roadIsland, townCenter, BuildingCatalog.CottageId),
+    "Generated mountain Quarry and central Cottage can coexist");
+Check(roadIsland.Roads.PlaceDirt(approach).Succeeded &&
+      roadIsland.Roads.PlaceDirt(corridor).Succeeded &&
+      roadIsland.Roads.AreBuildingsConnected(townCenter, mountain),
+    "Guaranteed grass approach supports a road-connected mountain quarry");
+
 Console.WriteLine("All smoke tests passed.");
