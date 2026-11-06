@@ -25,3 +25,7 @@ jobs:
         run: dotnet build src/LittleEmpires.Core/LittleEmpires.Core.csproj --configuration Release --warnaserror
       - name: Run smoke tests
         run: dotnet run --project tests/LittleEmpires.SmokeTests/LittleEmpires.SmokeTests.csproj --configuration Release
+      - name: Build settlement simulator
+        run: dotnet build src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --warnaserror
+      - name: Run eight-season economy scenario
+        run: dotnet run --project src/LittleEmpires.Simulator/LittleEmpires.Simulator.csproj --configuration Release --no-build -- 8
