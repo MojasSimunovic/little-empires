@@ -51,8 +51,14 @@ public sealed class Settlement
         Population = population;
     }
 
+    // The gameplay/UI layer can select one of the catalogue buildings by ID.
+    public bool TryStartConstruction(GameState state, string buildingId) =>
+        TryStartConstruction(state, BuildingCatalog.Get(buildingId));
+
     public bool TryStartConstruction(GameState state, BuildingDefinition definition)
     {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(definition);
         definition.Validate();
         if (!state.TrySpend(definition.Cost)) return false;
         _buildings.Add(new Building(definition));
