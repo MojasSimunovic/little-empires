@@ -13,6 +13,7 @@ public static class BuildingCatalog
     public const string QuarryId = "quarry";
     public const string FarmId = "farm";
     public const string CottageId = "cottage";
+    public const string TownhouseId = "townhouse";
 
     private static readonly IReadOnlyList<BuildingDefinition> Definitions =
         Array.AsReadOnly(new[]
@@ -36,7 +37,12 @@ public static class BuildingCatalog
             new BuildingDefinition(
                 CottageId, "Cottage",
                 Map((Resource.Wood, 18), (Resource.Stone, 5), (Resource.Coins, 10)),
-                1, Map(), HousingCapacity: 6)
+                1, Map(), HousingCapacity: 6),
+            // Upgrade destination only: never charge this definition's empty cost
+            // as a direct construction price. The upgrade has its own cost/time.
+            new BuildingDefinition(
+                TownhouseId, "Townhouse", Map(), 1, Map(),
+                HousingCapacity: 12, CanBuildDirectly: false)
         });
 
     private static readonly IReadOnlyDictionary<string, BuildingDefinition> ById =
