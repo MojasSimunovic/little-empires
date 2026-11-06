@@ -1,0 +1,16 @@
+# Unity-generated caches and local settings
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+UserSettings/
+.vs/
+.vscode/
+*.csproj.user
+*.suo
+.DS_Store
+# .NET build outputs
+**/bin/
+**/obj/
