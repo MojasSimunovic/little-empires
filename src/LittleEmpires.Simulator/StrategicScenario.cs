@@ -44,6 +44,8 @@ internal static class StrategicScenario
             Ensure(session.PlaceDirtRoad(new GridPosition(x, 3)).Succeeded, "Industry road");
         for (var x = 2; x <= 4; x++)
             Ensure(session.PlaceDirtRoad(new GridPosition(x, 5)).Succeeded, "Marketplace road");
+        Ensure(session.PlaceDirtRoad(new GridPosition(5, 4)).Succeeded, "Road junction");
+        Ensure(session.PlaceDirtRoad(new GridPosition(5, 5)).Succeeded, "Road junction");
 
         var buildings = new (string Id, GridPosition Position)[]
         {
