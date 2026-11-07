@@ -30,6 +30,25 @@ public static class RoadPathChecks
         check(!map.Roads.BuildPath(state,zFirst,true).Succeeded && state.Get(Resource.Stone)==0 && map.Roads.Segments.Count==count && map.Roads.Segments[new GridPosition(1,2)]==RoadSurface.Dirt,"insufficient stone atomicity");
         check(map.Roads.AreConnected(new GridPosition(1,1),new GridPosition(5,3)),"four-way connectivity");
         check(map.Roads.BuildPath(state,new[]{new GridPosition(6,6)}).Succeeded,"single click");
+        var session=WorldGameSession.NewStrategicIsland(42,64,64);
+        var crossing=new GridPosition(44,28);
+        var bridgePath=RoadPaths.Between(new GridPosition(42,28),new GridPosition(46,28));
+        check(session.PreviewRoadPath(bridgePath).CostWood==8,"bridge preview eight wood");
+        check(!session.BuildRoadPath(new[]{crossing}).Succeeded,"missing bank roads rejected");
+        check(!session.BuildRoadPath(RoadPaths.Between(new GridPosition(44,27),new GridPosition(44,29))).Succeeded,"sideways crossing rejected");
+        var poor=new WorldGameSession(new GameState(wood:7,stone:15),new Settlement(),session.Island);
+        check(!poor.BuildRoadPath(bridgePath).Succeeded && poor.Island.Roads.Segments.Count==0 && poor.State.Get(Resource.Wood)==7,"insufficient bridge wood atomicity");
+        check(session.BuildRoadPath(bridgePath).Succeeded && session.State.Get(Resource.Wood)==112,"wood bridge built for eight");
+        check(session.Island.Roads.AreConnected(bridgePath[0],bridgePath[4]),"bridge connectivity");
+        check(session.Snapshot().Roads.Single(r=>r.Position==crossing).Bridge==BridgeAxis.EastWest,"bridge snapshot metadata");
+        check(!poor.BuildRoadPath(bridgePath,true).Succeeded && poor.State.Get(Resource.Stone)==15 && poor.Island.Roads.Segments.Values.All(v=>v==RoadSurface.Dirt),"bridge stone shortage atomicity");
+        check(session.BuildRoadPath(bridgePath,true).Succeeded && session.State.Get(Resource.Stone)==44,"stone bridge eight plus four approaches eight");
+        check(session.BuildRoadPath(bridgePath,true).CostStone==0,"bridge reuse free");
+        session.EndSeason(); session.EndSeason();
+        check(session.Island.Roads.AreConnected(bridgePath[0],bridgePath[4]) && session.Island.Roads.Segments[crossing]==RoadSurface.Stone,"bridge persists two seasons");
+        check(!session.PlaceBuilding(crossing,BuildingCatalog.CottageId),"bridge cannot host building");
+        check(!session.BuildRoadPath(new[]{new GridPosition(0,0)}).Succeeded,"ocean crossing rejected");
+        check(!session.BuildRoadPath(new[]{new GridPosition(44,29)}).Succeeded,"unsupported river rejected");
         return string.Join("; ",passed);
     }
 }

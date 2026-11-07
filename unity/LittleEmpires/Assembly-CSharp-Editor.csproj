@@ -53,7 +53,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\LittleEmpires\Editor\CreateStarterScene.cs" />
+    <Compile Include="Assets\LittleEmpires\Editor\BridgePrefabBuilder.cs" />
     <Compile Include="Assets\TutorialInfo\Editor\ReadmeEditor.cs" />
+    <Compile Include="Assets\LittleEmpires\Editor\RoadPathChecks.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

@@ -15,6 +15,8 @@ namespace LittleEmpires.Unity
         [SerializeField] private bool largeIsland;
         [SerializeField] private float cellSize = 6f;
         [SerializeField] private BuildingPrefabRegistry buildingPrefabs;
+        [SerializeField] private GameObject woodenBridgePrefab;
+        [SerializeField] private GameObject stoneBridgePrefab;
 
         private WorldGameSession _session;
         private IslandView _view;
@@ -60,6 +62,11 @@ namespace LittleEmpires.Unity
             if (_view != null) _view.ShowRoadPreview(null, null);
         }
 
+        private void OnApplicationFocus(bool focused)
+        {
+            if (!focused) CancelRoad();
+        }
+
         // Shared by pointer input and editor acceptance tests; never mutates the core until release.
         public void BeginRoad(GridPosition start, bool stone)
         {
@@ -73,11 +80,21 @@ namespace LittleEmpires.Unity
         public void PreviewRoad(GridPosition end)
         {
             if (!_roadStart.HasValue) return;
+            if (_roadEnd.HasValue && _roadEnd.Value == end && _roadPreview != null) return;
             _roadEnd = end;
             _roadPreview = _session.PreviewRoadPath(RoadPaths.Between(_roadStart.Value, end, _xFirst), _roadTool == Tool.StoneRoad);
-            _view.ShowRoadPreview(_roadPreview, _session.Island.Roads);
+            _view.ShowRoadPreview(_roadPreview, _session.Island.Roads, _roadTool == Tool.StoneRoad);
             _message = _roadPreview.Segments.Count + " plots | " + _roadPreview.CostWood + " wood / " + _roadPreview.CostStone +
                 " stone | Tab: switch corner | " + (_roadPreview.Succeeded ? "Release to build" : _roadPreview.Failure.ToString());
+        }
+
+        public void ToggleRoadCorner()
+        {
+            _xFirst = !_xFirst;
+            if (!_roadEnd.HasValue) return;
+            var end = _roadEnd.Value;
+            _roadEnd = null;
+            PreviewRoad(end);
         }
 
         public void FinishRoad(bool commit)
@@ -98,6 +115,8 @@ namespace LittleEmpires.Unity
             var visualRoot = new GameObject("World visuals");
             _view = visualRoot.AddComponent<IslandView>();
             _view.BuildingPrefabs = buildingPrefabs;
+            _view.WoodenBridgePrefab = woodenBridgePrefab;
+            _view.StoneBridgePrefab = stoneBridgePrefab;
             if (largeIsland) {
                 _view.LargeTerrain = visualRoot.AddComponent<LargeIslandTerrain>();
                 _view.LargeTerrain.CellSize = cellSize;
@@ -149,7 +168,7 @@ namespace LittleEmpires.Unity
             if (Input.GetKeyDown(KeyCode.E)) EndSeason();
             if (Input.GetKeyDown(KeyCode.Escape)) { CancelRoad(); _tool = Tool.Inspect; }
             if (_roadStart.HasValue && (_tool != _roadTool || Input.GetMouseButtonDown(1))) { CancelRoad(); return; }
-            if (_roadStart.HasValue && Input.GetKeyDown(KeyCode.Tab)) { _xFirst = !_xFirst; PreviewRoad(_roadEnd.Value); }
+            if (_roadStart.HasValue && Input.GetKeyDown(KeyCode.Tab)) ToggleRoadCorner();
             var roadTool = _tool == Tool.DirtRoad || _tool == Tool.StoneRoad;
             GridPosition picked = default;
             var hasPlot = !MouseInsideHud() && TryPick(out picked);
@@ -290,6 +309,7 @@ namespace LittleEmpires.Unity
 
         private void EndSeason()
         {
+            CancelRoad();
             _lastTurn = _session.EndSeason();
             _message = "Season resolved. +" + _lastTurn.NewResidents +
                 " residents, taxes +" + _lastTurn.TaxIncome +
@@ -345,6 +365,11 @@ namespace LittleEmpires.Unity
                 GUIUtility.ExitGUI();
             }
             GUILayout.Label(_message, _statusStyle, GUILayout.ExpandWidth(true));
+            if (_tool == Tool.DirtRoad || _tool == Tool.StoneRoad)
+            {
+                var clickMode = GUILayout.Toggle(clickRoadEndpoints, "Click start / click end");
+                if (clickMode != clickRoadEndpoints) { CancelRoad(); clickRoadEndpoints = clickMode; }
+            }
 
             if (_showInspector)
             {

@@ -14,7 +14,7 @@ public sealed record BuildingView(
     int UpgradeSeasonsRemaining, int HousingCapacity,
     int WorkersRequired, int WorkPriority);
 
-public sealed record RoadView(GridPosition Position, RoadSurface Surface);
+public sealed record RoadView(GridPosition Position, RoadSurface Surface, BridgeAxis Bridge = BridgeAxis.None);
 
 /// <summary>
 /// Immutable point-in-time data for the future Unity UI. Does not expose
@@ -60,7 +60,9 @@ public sealed class WorldGameSession
         Settlement.TryStartConstruction(State, Island, position, buildingId);
 
     public RoadActionResult PlaceDirtRoad(GridPosition position) =>
-        Island.Roads.PlaceDirt(position);
+        Island.TryGetTile(position, out var tile) && tile.Terrain == TerrainKind.River
+            ? new RoadActionResult(Island.Roads.BuildPath(State, new[] { position }).Failure)
+            : Island.Roads.PlaceDirt(position);
 
     public RoadActionResult UpgradeStoneRoad(GridPosition position) =>
         Island.Roads.UpgradeToStone(State, position);
@@ -101,6 +103,7 @@ public sealed class WorldGameSession
                     building.Definition.WorkersRequired, building.WorkPriority))
                 .ToArray()),
             Array.AsReadOnly(Island.Roads.Segments
-                .Select(entry => new RoadView(entry.Key, entry.Value)).ToArray()));
+                .Select(entry => new RoadView(entry.Key, entry.Value,
+                    Island.RiverCrossings.TryGetValue(entry.Key, out var axis) ? axis : BridgeAxis.None)).ToArray()));
 }
 }

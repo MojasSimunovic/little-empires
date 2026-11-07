@@ -152,6 +152,9 @@ MonoBehaviour:
   largeIsland: 1
   cellSize: 6
   buildingPrefabs: {fileID: 11400000, guid: 9b615a9fc80e6e84196952ea440b0200, type: 2}
+  woodenBridgePrefab: {fileID: 5561431412073174756, guid: 42caaadc8a66f0a4ca4bb6b22ff50550, type: 3}
+  stoneBridgePrefab: {fileID: 9095575025013522948, guid: 389a946f22ea2cf4ba9bda60cedba5aa, type: 3}
+  clickRoadEndpoints: 0
 --- !u!4 &157786872
 Transform:
   m_ObjectHideFlags: 0

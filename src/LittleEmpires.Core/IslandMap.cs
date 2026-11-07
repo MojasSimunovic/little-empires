@@ -26,7 +26,8 @@ public enum TerrainKind
     Grassland,
     FertileLand,
     Forest,
-    Mountain
+    Mountain,
+    River
 }
 
 public readonly struct IslandTile
@@ -56,8 +57,10 @@ public sealed class IslandMap
     public IReadOnlyList<IslandTile> Tiles => _allTiles;
     public IReadOnlyDictionary<GridPosition, Building> OccupiedSites => _readOnlyOccupants;
     public IslandRoadNetwork Roads { get; }
+    public IReadOnlyDictionary<GridPosition, BridgeAxis> RiverCrossings { get; }
 
-    public IslandMap(int width, int height, IEnumerable<IslandTile> tiles)
+    public IslandMap(int width, int height, IEnumerable<IslandTile> tiles,
+        IReadOnlyDictionary<GridPosition, BridgeAxis>? riverCrossings = null)
     {
         if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
         if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
@@ -87,6 +90,12 @@ public sealed class IslandMap
             throw new ArgumentException("Every grid position requires exactly one tile.", nameof(tiles));
 
         _allTiles = collected.AsReadOnly();
+        var crossings = riverCrossings == null ? new Dictionary<GridPosition, BridgeAxis>() :
+            riverCrossings.ToDictionary(p => p.Key, p => p.Value);
+        foreach (var crossing in crossings)
+            if (!Contains(crossing.Key) || GetTile(crossing.Key).Terrain != TerrainKind.River || crossing.Value != BridgeAxis.EastWest)
+                throw new ArgumentException("Crossings must be east-west spans over river tiles.", nameof(riverCrossings));
+        RiverCrossings = new ReadOnlyDictionary<GridPosition, BridgeAxis>(crossings);
         _readOnlyOccupants = new ReadOnlyDictionary<GridPosition, Building>(_occupants);
         Roads = new IslandRoadNetwork(this);
     }
@@ -126,7 +135,7 @@ public sealed class IslandMap
 
     public bool IsShoreline(GridPosition position) =>
         TryGetTile(position, out var tile) &&
-        tile.Terrain != TerrainKind.Water &&
+        tile.Terrain != TerrainKind.Water && tile.Terrain != TerrainKind.River &&
         Neighbours(position).Any(neighbour => neighbour.Terrain == TerrainKind.Water);
 
     public bool TryGetBuilding(GridPosition position, out Building? building) =>
@@ -135,7 +144,7 @@ public sealed class IslandMap
     internal void Occupy(GridPosition position, Building building)
     {
         if (building == null) throw new ArgumentNullException(nameof(building));
-        if (!Contains(position) || GetTile(position).Terrain == TerrainKind.Water ||
+        if (!Contains(position) || GetTile(position).Terrain == TerrainKind.Water || GetTile(position).Terrain == TerrainKind.River ||
             Roads.HasRoad(position) || !_occupants.TryAdd(position, building))
             throw new InvalidOperationException("The chosen island tile is unavailable.");
     }

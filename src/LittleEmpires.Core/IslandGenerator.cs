@@ -24,7 +24,7 @@ public static class IslandGenerator
                 for (var x = 0; x < width; x++)
                     authoredTiles.Add(new IslandTile(new GridPosition(x, z),
                         LargeIslandGeography.Classify(x, z)));
-            return new IslandMap(width, height, authoredTiles);
+            return new IslandMap(width, height, authoredTiles, IslandRiver.Crossings());
         }
 
         var random = new Random(seed);

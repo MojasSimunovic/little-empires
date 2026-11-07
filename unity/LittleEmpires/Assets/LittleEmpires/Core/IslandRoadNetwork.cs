@@ -92,7 +92,7 @@ public sealed partial class IslandRoadNetwork
             return new RoadActionResult(RoadFailure.RoadMissing);
         if (surface == RoadSurface.Stone)
             return new RoadActionResult(RoadFailure.AlreadyStone);
-        if (state.Get(Resource.Stone) < StoneUpgradeCost)
+        if (state.Get(Resource.Stone) < UpgradeCost(position))
             return new RoadActionResult(RoadFailure.InsufficientStone);
         return new RoadActionResult(RoadFailure.None);
     }
@@ -110,7 +110,7 @@ public sealed partial class IslandRoadNetwork
         // road upgrade occurs even if future mechanics modify the stockpile.
         if (!state.TrySpend(new Dictionary<Resource, int>
             {
-                [Resource.Stone] = StoneUpgradeCost
+                [Resource.Stone] = UpgradeCost(position)
             }))
             return new RoadActionResult(RoadFailure.InsufficientStone);
 
@@ -140,7 +140,8 @@ public sealed partial class IslandRoadNetwork
             foreach (var tile in _island.Neighbours(current))
             {
                 var next = tile.Position;
-                if (HasRoad(next) && visited.Add(next))
+                if (HasRoad(next) &&
+                    ((!_island.RiverCrossings.ContainsKey(current) && !_island.RiverCrossings.ContainsKey(next)) || current.Z == next.Z) && visited.Add(next))
                     queue.Enqueue(next);
             }
         }

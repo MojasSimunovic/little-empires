@@ -55,6 +55,7 @@
     <Compile Include="Assets\LittleEmpires\Core\ScenarioRunner.cs" />
     <Compile Include="Assets\LittleEmpires\Core\IslandMap.cs" />
     <Compile Include="Assets\LittleEmpires\Core\BuildingPlacementRules.cs" />
+    <Compile Include="Assets\LittleEmpires\Core\RoadPaths.cs" />
     <Compile Include="Assets\LittleEmpires\Core\SettlementHappinessSystem.cs" />
     <Compile Include="Assets\LittleEmpires\Core\PopulationGrowthSystem.cs" />
     <Compile Include="Assets\LittleEmpires\Core\GameState.cs" />
@@ -65,6 +66,7 @@
     <Compile Include="Assets\LittleEmpires\Core\TurnEngine.cs" />
     <Compile Include="Assets\LittleEmpires\Core\IslandRoadNetwork.cs" />
     <Compile Include="Assets\LittleEmpires\Core\TaxationSystem.cs" />
+    <Compile Include="Assets\LittleEmpires\Core\IslandRiver.cs" />
     <Compile Include="Assets\LittleEmpires\Core\IsExternalInit.cs" />
     <Compile Include="Assets\LittleEmpires\Core\WorkforceSystem.cs" />
     <Compile Include="Assets\LittleEmpires\Core\MarketplaceTrading.cs" />

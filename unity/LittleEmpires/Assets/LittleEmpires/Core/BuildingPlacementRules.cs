@@ -53,7 +53,7 @@ public static class BuildingPlacementRules
             return new PlacementResult(PlacementFailure.UpgradeOnly);
         if (!island.TryGetTile(position, out var tile))
             return new PlacementResult(PlacementFailure.OutsideMap);
-        if (tile.Terrain == TerrainKind.Water)
+        if (tile.Terrain == TerrainKind.Water || tile.Terrain == TerrainKind.River)
             return new PlacementResult(PlacementFailure.Water);
         if (island.OccupiedSites.ContainsKey(position))
             return new PlacementResult(PlacementFailure.AlreadyOccupied);

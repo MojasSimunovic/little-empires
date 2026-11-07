@@ -88,6 +88,7 @@ public static class LargeIslandGeography
     {
         var elevation = SampleElevation(x, z);
         if (elevation <= 4) return TerrainKind.Water;
+        if (IslandRiver.IsRiverCell(x,z)) return TerrainKind.River;
         if (SampleCoastalShape(x, z) > MountainBoundary) return TerrainKind.Mountain;
         var biome = Biomes[Math.Min(16, z / 4)][Math.Min(16, x / 4)];
         if (biome == 'F') return TerrainKind.Forest;

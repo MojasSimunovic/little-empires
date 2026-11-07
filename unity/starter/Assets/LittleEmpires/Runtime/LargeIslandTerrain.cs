@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LittleEmpires.Unity
 {
-    public sealed class LargeIslandTerrain : MonoBehaviour
+    public sealed partial class LargeIslandTerrain : MonoBehaviour
     {
         public float CellSize = 6f;
         public Terrain Surface { get; private set; }
@@ -101,6 +101,7 @@ namespace LittleEmpires.Unity
             water.color = new Color(.20f,.47f,.51f);
             water.SetFloat("_Smoothness",.65f);
             ocean.GetComponent<Renderer>().sharedMaterial = water;
+            if (_width == 64 && _depth == 64) BuildRiver();
         }
 
         private TerrainKind Kind(int x, int z) => _kinds[Mathf.Clamp(x,0,_width-1),Mathf.Clamp(z,0,_depth-1)];
@@ -116,7 +117,7 @@ namespace LittleEmpires.Unity
         private float Height(float x, float z)
         {
             if (_width == 64 && _depth == 64)
-                return (float)LargeIslandGeography.SampleElevation(x, z);
+                return (float)IslandRiver.Carve(x, z, LargeIslandGeography.SampleElevation(x, z));
             var ix = Mathf.FloorToInt(x);
             var iz = Mathf.FloorToInt(z);
             // Broad flat plot interiors, with smooth transitions between them.
