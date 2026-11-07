@@ -1,4 +1,9 @@
-namespace LittleEmpires.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LittleEmpires.Core
+{
 
 /// <summary>
 /// Deterministic prototype island generation. Every supported island contains
@@ -88,4 +93,5 @@ public static class IslandGenerator
 
         return new IslandMap(width, height, tiles);
     }
+}
 }
