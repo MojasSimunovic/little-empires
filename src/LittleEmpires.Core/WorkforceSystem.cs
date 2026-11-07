@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 using System.Collections.ObjectModel;
 
-namespace LittleEmpires.Core;
+namespace LittleEmpires.Core
+{
 
 /// <summary>Staffing allocation for the current turn, keyed by actual buildings.</summary>
 public sealed class WorkforceReport
@@ -38,8 +43,8 @@ public static class WorkforceSystem
 {
     public static WorkforceReport Resolve(GameState state, Settlement settlement)
     {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(settlement);
+        if (state == null) throw new ArgumentNullException(nameof(state));
+        if (settlement == null) throw new ArgumentNullException(nameof(settlement));
 
         var available = settlement.Population;
         var spent = 0;
@@ -76,4 +81,5 @@ public static class WorkforceSystem
     internal static WorkforceReport Classic(Settlement settlement) =>
         new(new ReadOnlyDictionary<Building, int>(new Dictionary<Building, int>()),
             0, settlement.Population, 0);
+}
 }
