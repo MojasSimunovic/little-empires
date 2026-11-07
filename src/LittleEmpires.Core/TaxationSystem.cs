@@ -1,4 +1,9 @@
-namespace LittleEmpires.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LittleEmpires.Core
+{
 
 /// <summary>
 /// Classic preserves the early prototype's economy and existing deterministic
@@ -9,10 +14,18 @@ public enum EconomyMode { Classic, Strategic }
 
 public enum TaxPolicy { Low, Normal, High, VeryHigh }
 
-public readonly record struct TaxPolicyEffects(
-    int IncomeNumerator,
-    int IncomeDenominator,
-    int HappinessPerSeason);
+public readonly struct TaxPolicyEffects
+{
+    public int IncomeNumerator { get; }
+    public int IncomeDenominator { get; }
+    public int HappinessPerSeason { get; }
+    public TaxPolicyEffects(int incomeNumerator, int incomeDenominator, int happinessPerSeason)
+    {
+        IncomeNumerator = incomeNumerator;
+        IncomeDenominator = incomeDenominator;
+        HappinessPerSeason = happinessPerSeason;
+    }
+}
 
 /// <summary>
 /// Fixed-rate prototype taxes. Tax revenue uses existing residents only, so
@@ -38,9 +51,10 @@ public static class TaxationSystem
 
     public static int Collect(GameState state, int population, TaxPolicy policy)
     {
-        ArgumentNullException.ThrowIfNull(state);
+        if (state == null) throw new ArgumentNullException(nameof(state));
         var income = CalculateIncome(population, policy);
         state.Add(Resource.Coins, income);
         return income;
     }
+}
 }
