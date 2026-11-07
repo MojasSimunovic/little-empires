@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 using System.Collections.ObjectModel;
 
-namespace LittleEmpires.Core;
+namespace LittleEmpires.Core
+{
 
 /// <summary>Read-only, engine-independent rendering information for one building.</summary>
 public sealed record BuildingView(
@@ -91,4 +96,5 @@ public sealed class WorldGameSession
                 .ToArray()),
             Array.AsReadOnly(Island.Roads.Segments
                 .Select(entry => new RoadView(entry.Key, entry.Value)).ToArray()));
+}
 }
