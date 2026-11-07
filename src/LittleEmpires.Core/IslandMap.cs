@@ -1,9 +1,24 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 using System.Collections.ObjectModel;
 
-namespace LittleEmpires.Core;
+namespace LittleEmpires.Core
+{
 
 /// <summary>Logical island coordinates. Unity converts these to world positions.</summary>
-public readonly record struct GridPosition(int X, int Z);
+public readonly struct GridPosition : IEquatable<GridPosition>
+{
+    public int X { get; }
+    public int Z { get; }
+    public GridPosition(int x, int z) { X = x; Z = z; }
+    public bool Equals(GridPosition other) => X == other.X && Z == other.Z;
+    public override bool Equals(object obj) => obj is GridPosition other && Equals(other);
+    public override int GetHashCode() { unchecked { return (X * 397) ^ Z; } }
+    public static bool operator ==(GridPosition left, GridPosition right) => left.Equals(right);
+    public static bool operator !=(GridPosition left, GridPosition right) => !left.Equals(right);
+}
 
 public enum TerrainKind
 {
@@ -14,7 +29,16 @@ public enum TerrainKind
     Mountain
 }
 
-public readonly record struct IslandTile(GridPosition Position, TerrainKind Terrain);
+public readonly struct IslandTile
+{
+    public GridPosition Position { get; }
+    public TerrainKind Terrain { get; }
+    public IslandTile(GridPosition position, TerrainKind terrain)
+    {
+        Position = position;
+        Terrain = terrain;
+    }
+}
 
 /// <summary>
 /// Rectangular terrain grid with a separate occupancy layer. Terrain is immutable
@@ -37,7 +61,7 @@ public sealed class IslandMap
     {
         if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
         if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
-        ArgumentNullException.ThrowIfNull(tiles);
+        if (tiles == null) throw new ArgumentNullException(nameof(tiles));
         Width = width;
         Height = height;
         _tiles = new IslandTile[width, height];
@@ -51,7 +75,7 @@ public sealed class IslandMap
                 throw new ArgumentException("Tile position is outside the island grid.", nameof(tiles));
             if (seen[position.X, position.Z])
                 throw new ArgumentException("Duplicate tile position.", nameof(tiles));
-            if (!Enum.IsDefined(tile.Terrain))
+            if (!Enum.IsDefined(typeof(TerrainKind), tile.Terrain))
                 throw new ArgumentException("Unknown terrain type.", nameof(tiles));
 
             seen[position.X, position.Z] = true;
@@ -110,9 +134,10 @@ public sealed class IslandMap
 
     internal void Occupy(GridPosition position, Building building)
     {
-        ArgumentNullException.ThrowIfNull(building);
+        if (building == null) throw new ArgumentNullException(nameof(building));
         if (!Contains(position) || GetTile(position).Terrain == TerrainKind.Water ||
             Roads.HasRoad(position) || !_occupants.TryAdd(position, building))
             throw new InvalidOperationException("The chosen island tile is unavailable.");
     }
+}
 }
