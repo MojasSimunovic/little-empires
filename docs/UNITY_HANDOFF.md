@@ -1,6 +1,6 @@
 # Unity 6 handoff — Little Empires
 
-**Status:** C# simulation integration boundary prepared. No Unity scene, prefabs, import package or Unity build has been created or tested yet.
+**Status:** The shared C# 9 / .NET Standard 2.1 compatibility build is green in GitHub Actions. A procedural Unity starter scene and Windows installer are now committed at [unity/GETTING_STARTED_WINDOWS.md](../unity/GETTING_STARTED_WINDOWS.md). Real Unity Editor compilation and visual QA on Windows are still pending.
 
 ## What is ready today
 
@@ -38,10 +38,10 @@ All player commands are resolved in C#. Unity only needs to render state changes
 
 ## Integration checklist for your personal Windows PC
 
-1. Install **Unity Hub and a supported Unity 6 editor**, then create a **3D URP** project.
-2. Import the C# source after deciding a Unity-compatible target/API surface. **Do not simply copy the existing .NET 8 DLL** and assume it loads.
-3. Confirm the Unity scripting runtime supports the features used by the core: records, pattern matching, nullable reference types, `ArgumentNullException.ThrowIfNull`, `Enum.IsDefined<T>`, and collection APIs. Refactor/polyfill unsupported APIs or multi-target the source where needed.
-4. Add a scene entry point (e.g. `GameBootstrap`) that creates and holds `WorldGameSession`.
+1. Install **Unity Hub and Unity 6.3 LTS**, then create a **Universal 3D (URP)** project.
+2. Clone the repository and run `tools/Install-UnityStarter.ps1 -UnityProject "C:\\Dev\\LittleEmpires"` on Windows, passing your actual Unity project path.
+3. The script copies the **authoritative C# source** into an isolated assembly plus a runtime scene view, camera, and editor menu. `.NET Standard 2.1` compilation with `C# 9` is verified in GitHub Actions; actual Editor compilation still requires testing on Windows.
+4. In Unity select **Little Empires > Create Starter Island Scene**. Press Play; `GameBootstrap` creates the live `WorldGameSession` and renders its terrain from `WorldSnapshot`.
 5. Use prefab IDs matching `BuildingCatalog` constants and terrain meshes matching `TerrainKind`.
 6. Use orthogonal grid raycasting to convert Unity world coordinates to `GridPosition`. Use `PreviewBuilding` results for valid/invalid highlighting before placing.
 7. Draw road segments using `WorldSnapshot.Roads`; let the C# road graph decide connectivity.
@@ -51,7 +51,7 @@ All player commands are resolved in C#. Unity only needs to render state changes
 
 ## Important versioning constraints
 
-- The C# core currently targets **.NET 8**. Unity 6 has its own scripting runtime and API compatibility constraints. We will verify and adapt rather than promising drop-in compatibility.
+- The canonical core is compiled for **.NET 8** and also has a separate **.NET Standard 2.1/C# 9 compatibility target** for Unity. We copy its source into Unity (not its .NET 8 DLL), keeping gameplay rules identical. GitHub Actions verifies both targets; Unity Editor compilation and IL2CPP are not yet tested.
 - Existing Three.js browser save files are a different schema; **do not overwrite or silently migrate them**.
 - `BuildingIndex` is stable only while buildings aren't demolished. Before adding demolition/real persistence, introduce stable building instance IDs.
 - Runtime modifiers are currently fixed catalogue data in code; a future Unity editor could expose ScriptableObjects for presentation settings, but game balance should remain testable without Unity.
@@ -59,4 +59,4 @@ All player commands are resolved in C#. Unity only needs to render state changes
 
 ## What remains to be implemented in Unity
 
-This handoff is **not a completed Unity integration**. The remaining work is the Unity project, compiler compatibility, scene hierarchy, terrain and building prefabs, isometric camera, input, tooltip previews, economic HUD, local persistence and QA. Track in [LE-026](https://github.com/MojasSimunovic/little-empires/issues/35).
+This handoff is **not a fully tested Unity integration**. A procedural scene generator, camera, basic building/road controls, tax and Marketplace HUD, and source sync are now in the starter. Still to verify the Unity Editor runtime, replace procedural placeholders with medieval prefabs, add proper input/UI, local persistence, Windows builds and QA. Track in [LE-026](https://github.com/MojasSimunovic/little-empires/issues/35).
