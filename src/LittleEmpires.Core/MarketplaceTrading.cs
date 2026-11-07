@@ -1,4 +1,9 @@
-namespace LittleEmpires.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LittleEmpires.Core
+{
 
 public enum TradeDirection { Buy, Sell }
 
@@ -15,9 +20,19 @@ public enum TradeFailure
     InventoryOverflow
 }
 
-public readonly record struct TradeResult(
-    TradeFailure Failure, int Units, int UnitPrice, int TotalCoins)
+public readonly struct TradeResult
 {
+    public TradeFailure Failure { get; }
+    public int Units { get; }
+    public int UnitPrice { get; }
+    public int TotalCoins { get; }
+    public TradeResult(TradeFailure failure, int units, int unitPrice, int totalCoins)
+    {
+        Failure = failure;
+        Units = units;
+        UnitPrice = unitPrice;
+        TotalCoins = totalCoins;
+    }
     public bool Succeeded => Failure == TradeFailure.None;
 }
 
@@ -43,12 +58,12 @@ public static class MarketplaceTrading
         GameState state, Settlement settlement, IslandMap island,
         int marketplaceIndex, TradeDirection direction, Resource resource, int units)
     {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(settlement);
-        ArgumentNullException.ThrowIfNull(island);
+        if (state == null) throw new ArgumentNullException(nameof(state));
+        if (settlement == null) throw new ArgumentNullException(nameof(settlement));
+        if (island == null) throw new ArgumentNullException(nameof(island));
 
         if (units <= 0) return Fail(TradeFailure.InvalidQuantity);
-        if (!Enum.IsDefined(direction) || resource is not
+        if (!Enum.IsDefined(typeof(TradeDirection), direction) || resource is not
             (Resource.Wood or Resource.Stone or Resource.Food))
             return Fail(TradeFailure.InvalidResource);
 
@@ -108,4 +123,5 @@ public static class MarketplaceTrading
     }
 
     private static TradeResult Fail(TradeFailure failure) => new(failure, 0, 0, 0);
+}
 }
