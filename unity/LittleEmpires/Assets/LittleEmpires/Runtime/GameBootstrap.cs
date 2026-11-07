@@ -14,6 +14,7 @@ namespace LittleEmpires.Unity
         [SerializeField] private int islandSeed = 42;
         [SerializeField] private bool largeIsland;
         [SerializeField] private float cellSize = 6f;
+        [SerializeField] private BuildingPrefabRegistry buildingPrefabs;
 
         private WorldGameSession _session;
         private IslandView _view;
@@ -51,6 +52,7 @@ namespace LittleEmpires.Unity
             var snapshot = _session.Snapshot();
             var visualRoot = new GameObject("World visuals");
             _view = visualRoot.AddComponent<IslandView>();
+            _view.BuildingPrefabs = buildingPrefabs;
             if (largeIsland) {
                 _view.LargeTerrain = visualRoot.AddComponent<LargeIslandTerrain>();
                 _view.LargeTerrain.CellSize = cellSize;

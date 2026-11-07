@@ -151,6 +151,7 @@ MonoBehaviour:
   islandSeed: 42
   largeIsland: 1
   cellSize: 6
+  buildingPrefabs: {fileID: 11400000, guid: 9b615a9fc80e6e84196952ea440b0200, type: 2}
 --- !u!4 &157786872
 Transform:
   m_ObjectHideFlags: 0

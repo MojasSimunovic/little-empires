@@ -13,7 +13,9 @@ namespace LittleEmpires.Unity
     public sealed class IslandView : MonoBehaviour
     {
         private readonly Dictionary<string, Material> _materials = new Dictionary<string, Material>();
+        private readonly HashSet<string> _missingPrefabs = new HashSet<string>();
         public LargeIslandTerrain LargeTerrain;
+        public BuildingPrefabRegistry BuildingPrefabs;
         private Transform _contentRoot;
         private GameObject _selection;
         private float _offsetX;
@@ -213,6 +215,23 @@ namespace LittleEmpires.Unity
                         new Vector3(.06f, .85f, .06f), new Color(.48f, .31f, .18f), false);
                 return;
             }
+
+            var prefab = BuildingPrefabs != null ? BuildingPrefabs.Find(building.Id) : null;
+            if (prefab != null)
+            {
+                // The cottage's 5.84 x 5.56 unit footprint fits one large-island plot.
+                // Its door faces -Z in the source prefab, toward the camera and road.
+                var visual = Instantiate(prefab, root, false);
+                visual.name = prefab.name;
+                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localRotation = Quaternion.identity;
+                visual.transform.localScale = Vector3.one / root.localScale.x;
+                foreach (var collider in visual.GetComponentsInChildren<Collider>())
+                    collider.enabled = false;
+                return;
+            }
+            if (BuildingPrefabs != null && _missingPrefabs.Add(building.Id))
+                Debug.LogWarning("No building prefab registered for " + building.Id + "; using procedural visuals.");
 
             switch (building.Id)
             {

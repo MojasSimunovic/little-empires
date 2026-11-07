@@ -56,6 +56,7 @@
     <Compile Include="Assets\LittleEmpires\Runtime\LargeIslandTerrain.cs" />
     <Compile Include="Assets\LittleEmpires\Runtime\IslandView.cs" />
     <Compile Include="Assets\LittleEmpires\Runtime\GameBootstrap.cs" />
+    <Compile Include="Assets\LittleEmpires\Runtime\BuildingPrefabRegistry.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\LittleEmpires\Runtime\LittleEmpires.Unity.asmdef" />
