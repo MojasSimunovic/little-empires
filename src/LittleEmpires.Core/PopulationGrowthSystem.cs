@@ -1,4 +1,9 @@
-namespace LittleEmpires.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LittleEmpires.Core
+{
 
 /// <summary>
 /// First-pass immigration policy: housing, food surplus, and happiness attract new residents.
@@ -10,8 +15,8 @@ public sealed class PopulationGrowthSystem
 
     public int ResolveImmigration(GameState state, Settlement settlement, int foodShortage)
     {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(settlement);
+        if (state == null) throw new ArgumentNullException(nameof(state));
+        if (settlement == null) throw new ArgumentNullException(nameof(settlement));
         if (foodShortage < 0) throw new ArgumentOutOfRangeException(nameof(foodShortage));
 
         if (foodShortage > 0)
@@ -32,4 +37,5 @@ public sealed class PopulationGrowthSystem
         var eligibleResidents = Math.Min(happinessLimit, state.Get(Resource.Food));
         return settlement.AcceptImmigrants(eligibleResidents);
     }
+}
 }
