@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 using System.Collections.ObjectModel;
 
-namespace LittleEmpires.Core;
+namespace LittleEmpires.Core
+{
 
 /// <summary>
 /// Upgrades transform an existing building in place, preserving its housing
@@ -60,4 +65,5 @@ public static class HousingUpgradeCatalog
 
         return BySource.TryGetValue(fromBuildingId, out upgrade);
     }
+}
 }
