@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 using System.Collections.ObjectModel;
 
-namespace LittleEmpires.Core;
+namespace LittleEmpires.Core
+{
 
 /// <summary>Seasonal output totals, separated from net resource changes.</summary>
 public sealed record ProductionReport(IReadOnlyDictionary<Resource, int> Produced);
@@ -20,9 +25,9 @@ public static class ProductionSystem
         GameState state, Settlement settlement, IslandMap? island,
         WorkforceReport staffing)
     {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(settlement);
-        ArgumentNullException.ThrowIfNull(staffing);
+        if (state == null) throw new ArgumentNullException(nameof(state));
+        if (settlement == null) throw new ArgumentNullException(nameof(settlement));
+        if (staffing == null) throw new ArgumentNullException(nameof(staffing));
 
         var totals = new Dictionary<Resource, long>();
         foreach (var source in settlement.Buildings.Where(building => building.IsComplete))
@@ -47,7 +52,7 @@ public static class ProductionSystem
 
                 var percentage = BonusPercent(source, resource, settlement, island, staffing);
                 var bonus = checked((int)((long)output * percentage / 100));
-                totals[resource] = checked(totals.GetValueOrDefault(resource) + output + bonus);
+                totals[resource] = checked((totals.TryGetValue(resource, out var previousTotal) ? previousTotal : 0L) + output + bonus);
             }
         }
 
@@ -101,4 +106,5 @@ public static class ProductionSystem
 
         return 0;
     }
+}
 }
