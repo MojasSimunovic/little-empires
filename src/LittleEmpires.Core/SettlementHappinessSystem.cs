@@ -1,4 +1,9 @@
-namespace LittleEmpires.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LittleEmpires.Core
+{
 
 /// <summary>
 /// Provisional seasonal happiness model. A settlement needs both reliable food
@@ -15,7 +20,7 @@ public sealed class SettlementHappinessSystem
     public int ResolveSeason(Settlement settlement, int foodShortage,
         int additionalHappinessChange = 0)
     {
-        ArgumentNullException.ThrowIfNull(settlement);
+        if (settlement == null) throw new ArgumentNullException(nameof(settlement));
         if (foodShortage < 0) throw new ArgumentOutOfRangeException(nameof(foodShortage));
         if (settlement.Population == 0) return 0;
 
@@ -26,4 +31,5 @@ public sealed class SettlementHappinessSystem
         return settlement.AdjustHappiness(checked(foodEffect + housingEffect +
             additionalHappinessChange));
     }
+}
 }
