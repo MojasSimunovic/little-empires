@@ -1,4 +1,9 @@
-namespace LittleEmpires.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LittleEmpires.Core
+{
 
 public sealed record BuildingDefinition(
     string Id,
@@ -19,7 +24,7 @@ public sealed record BuildingDefinition(
         if (HousingCapacity < 0) throw new ArgumentOutOfRangeException(nameof(HousingCapacity));
         if (WorkersRequired < 0) throw new ArgumentOutOfRangeException(nameof(WorkersRequired));
         if (UpkeepCoinsPerSeason < 0) throw new ArgumentOutOfRangeException(nameof(UpkeepCoinsPerSeason));
-        if (!Enum.IsDefined(SiteRequirement)) throw new ArgumentOutOfRangeException(nameof(SiteRequirement));
+        if (!Enum.IsDefined(typeof(PlacementRequirement), SiteRequirement)) throw new ArgumentOutOfRangeException(nameof(SiteRequirement));
         if (Cost.Values.Any(v => v < 0) || ProductionPerSeason.Values.Any(v => v < 0))
             throw new ArgumentException("Building amounts cannot be negative.");
     }
@@ -101,7 +106,7 @@ public sealed class Settlement
         if (happiness < 0 || happiness > 100)
             throw new ArgumentOutOfRangeException(nameof(happiness),
                 "Happiness must be between 0 and 100.");
-        if (!Enum.IsDefined(economyMode))
+        if (!Enum.IsDefined(typeof(EconomyMode), economyMode))
             throw new ArgumentOutOfRangeException(nameof(economyMode));
         StartingHousingCapacity = population;
         Population = population;
@@ -111,7 +116,7 @@ public sealed class Settlement
 
     public void SetTaxPolicy(TaxPolicy policy)
     {
-        if (!Enum.IsDefined(policy)) throw new ArgumentOutOfRangeException(nameof(policy));
+        if (!Enum.IsDefined(typeof(TaxPolicy), policy)) throw new ArgumentOutOfRangeException(nameof(policy));
         TaxPolicy = policy;
     }
 
@@ -126,7 +131,7 @@ public sealed class Settlement
     internal int AdjustHappiness(int amount)
     {
         var before = Happiness;
-        Happiness = (int)Math.Clamp((long)Happiness + amount, 0L, 100L);
+        Happiness = (int)Math.Max(0L, Math.Min(100L, (long)Happiness + amount));
         return Happiness - before;
     }
 
@@ -156,8 +161,8 @@ public sealed class Settlement
     public bool TryStartConstruction(
         GameState state, IslandMap island, GridPosition position, string buildingId)
     {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(island);
+        if (state == null) throw new ArgumentNullException(nameof(state));
+        if (island == null) throw new ArgumentNullException(nameof(island));
 
         var definition = BuildingCatalog.Get(buildingId);
         definition.Validate();
@@ -180,8 +185,8 @@ public sealed class Settlement
 
     public bool TryStartConstruction(GameState state, BuildingDefinition definition)
     {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(definition);
+        if (state == null) throw new ArgumentNullException(nameof(state));
+        if (definition == null) throw new ArgumentNullException(nameof(definition));
         definition.Validate();
         if (!definition.CanBuildDirectly || !state.TrySpend(definition.Cost)) return false;
         _buildings.Add(new Building(definition));
@@ -194,7 +199,7 @@ public sealed class Settlement
     /// </summary>
     public bool TryStartUpgrade(GameState state, int buildingIndex)
     {
-        ArgumentNullException.ThrowIfNull(state);
+        if (state == null) throw new ArgumentNullException(nameof(state));
         if (buildingIndex < 0 || buildingIndex >= _buildings.Count) return false;
 
         var building = _buildings[buildingIndex];
@@ -246,4 +251,5 @@ public sealed class Settlement
         ProgressUpgrades();
         state.AdvanceSeason();
     }
+}
 }
