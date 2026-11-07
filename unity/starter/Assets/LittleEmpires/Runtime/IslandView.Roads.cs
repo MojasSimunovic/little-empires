@@ -67,7 +67,7 @@ namespace LittleEmpires.Unity
         private Material PreviewMaterial(Color color)
         {
             if (_previewMaterials.TryGetValue(color,out var material)) return material;
-            material=new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            material=new Material(Shader.Find("Universal Render Pipeline/Unlit"));
             var tint=color; tint.a=.58f; material.color=tint;
             material.SetFloat("_Surface",1); material.SetFloat("_SrcBlend",5); material.SetFloat("_DstBlend",10);
             material.SetFloat("_ZWrite",0); material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); material.renderQueue=3000;
