@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 using System.Collections.ObjectModel;
 
-namespace LittleEmpires.Core;
+namespace LittleEmpires.Core
+{
 
 /// <summary>Roads occupy a separate layer from the immutable terrain grid.</summary>
 public enum RoadSurface { Dirt, Stone }
@@ -19,8 +24,10 @@ public enum RoadFailure
     InsufficientStone
 }
 
-public readonly record struct RoadActionResult(RoadFailure Failure)
+public readonly struct RoadActionResult
 {
+    public RoadFailure Failure { get; }
+    public RoadActionResult(RoadFailure failure) { Failure = failure; }
     public bool Succeeded => Failure == RoadFailure.None;
 }
 
@@ -75,7 +82,7 @@ public sealed class IslandRoadNetwork
     /// <summary>Pure validation for a stone-road upgrade preview.</summary>
     public RoadActionResult EvaluateStoneUpgrade(GameState state, GridPosition position)
     {
-        ArgumentNullException.ThrowIfNull(state);
+        if (state == null) throw new ArgumentNullException(nameof(state));
         if (!_island.Contains(position))
             return new RoadActionResult(RoadFailure.OutsideMap);
         if (!_roads.TryGetValue(position, out var surface))
@@ -173,4 +180,5 @@ public sealed class IslandRoadNetwork
 
         return starts.Any(start => ConnectedComponent(start).Any(targets.Contains));
     }
+}
 }
