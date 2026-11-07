@@ -23,6 +23,8 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build core library
         run: dotnet build src/LittleEmpires.Core/LittleEmpires.Core.csproj --configuration Release --warnaserror
+      - name: Compile shared core for Unity (.NET Standard 2.1, C# 9)
+        run: dotnet build src/LittleEmpires.Core/LittleEmpires.Core.UnityCompatibility.csproj --configuration Release --warnaserror
       - name: Run smoke tests
         run: dotnet run --project tests/LittleEmpires.SmokeTests/LittleEmpires.SmokeTests.csproj --configuration Release
       - name: Build settlement simulator
