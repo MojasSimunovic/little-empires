@@ -1,4 +1,9 @@
-namespace LittleEmpires.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LittleEmpires.Core
+{
 
 public enum Season { Spring, Summer, Autumn, Winter }
 public enum Resource { Wood, Stone, Food, Coins }
@@ -18,7 +23,7 @@ public sealed class GameState
         _resources[Resource.Coins] = RequireNonNegative(coins);
     }
 
-    public int Get(Resource resource) => _resources.GetValueOrDefault(resource);
+    public int Get(Resource resource) => _resources.TryGetValue(resource, out var value) ? value : 0;
 
     public void Add(Resource resource, int amount)
     {
@@ -52,4 +57,5 @@ public sealed class GameState
 
     private static int RequireNonNegative(int value) =>
         value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value));
+}
 }
