@@ -14,7 +14,7 @@ public readonly struct GridPosition : IEquatable<GridPosition>
     public int Z { get; }
     public GridPosition(int x, int z) { X = x; Z = z; }
     public bool Equals(GridPosition other) => X == other.X && Z == other.Z;
-    public override bool Equals(object obj) => obj is GridPosition other && Equals(other);
+    public override bool Equals(object? obj) => obj is GridPosition other && Equals(other);
     public override int GetHashCode() { unchecked { return (X * 397) ^ Z; } }
     public static bool operator ==(GridPosition left, GridPosition right) => left.Equals(right);
     public static bool operator !=(GridPosition left, GridPosition right) => !left.Equals(right);
