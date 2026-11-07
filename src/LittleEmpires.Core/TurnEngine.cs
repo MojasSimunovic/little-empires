@@ -49,7 +49,7 @@ public sealed class TurnEngine
         var startingSeason = state.Season;
         var startingPopulation = settlement.Population;
         var startingHappiness = settlement.Happiness;
-        var before = Enum.GetValues<Resource>()
+        var before = ((Resource[])Enum.GetValues(typeof(Resource)))
             .ToDictionary(resource => resource, state.Get);
         var incomplete = settlement.Buildings
             .Where(building => !building.IsComplete)
@@ -88,7 +88,7 @@ public sealed class TurnEngine
         // New season means fresh per-Marketplace trade limits.
         settlement.ResetTradeQuotas();
 
-        var changes = Enum.GetValues<Resource>()
+        var changes = ((Resource[])Enum.GetValues(typeof(Resource)))
             .ToDictionary(resource => resource, resource => state.Get(resource) - before[resource]);
         var completed = settlement.Buildings
             .Where(building => incomplete.Contains(building) && building.IsComplete)
