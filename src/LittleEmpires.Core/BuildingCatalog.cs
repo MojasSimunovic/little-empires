@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 using System.Collections.ObjectModel;
 
-namespace LittleEmpires.Core;
+namespace LittleEmpires.Core
+{
 
 /// <summary>
 /// Starting building catalogue for the Little Empires prototype.
@@ -91,4 +96,5 @@ public static class BuildingCatalog
         params (Resource Resource, int Amount)[] values) =>
         new ReadOnlyDictionary<Resource, int>(
             values.ToDictionary(value => value.Resource, value => value.Amount));
+}
 }
