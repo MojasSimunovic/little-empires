@@ -45,6 +45,51 @@ namespace LittleEmpires.Unity
         }
 
         private Tool _tool = Tool.Cottage;
+        private GridPosition? _roadStart;
+        private GridPosition? _roadEnd;
+        private bool _xFirst = true;
+        private Tool _roadTool;
+        [SerializeField] private bool clickRoadEndpoints;
+        private RoadPathPreview _roadPreview;
+
+        private void CancelRoad()
+        {
+            _roadStart = null;
+            _roadEnd = null;
+            _roadPreview = null;
+            if (_view != null) _view.ShowRoadPreview(null, null);
+        }
+
+        // Shared by pointer input and editor acceptance tests; never mutates the core until release.
+        public void BeginRoad(GridPosition start, bool stone)
+        {
+            CancelRoad();
+            _tool = stone ? Tool.StoneRoad : Tool.DirtRoad;
+            _roadTool = _tool;
+            _roadStart = start;
+            PreviewRoad(start);
+        }
+
+        public void PreviewRoad(GridPosition end)
+        {
+            if (!_roadStart.HasValue) return;
+            _roadEnd = end;
+            _roadPreview = _session.PreviewRoadPath(RoadPaths.Between(_roadStart.Value, end, _xFirst), _roadTool == Tool.StoneRoad);
+            _view.ShowRoadPreview(_roadPreview, _session.Island.Roads);
+            _message = _roadPreview.Segments.Count + " plots | " + _roadPreview.CostWood + " wood / " + _roadPreview.CostStone +
+                " stone | Tab: switch corner | " + (_roadPreview.Succeeded ? "Release to build" : _roadPreview.Failure.ToString());
+        }
+
+        public void FinishRoad(bool commit)
+        {
+            if (commit && _roadPreview != null)
+            {
+                var result = _session.BuildRoadPath(_roadPreview.Segments, _roadTool == Tool.StoneRoad);
+                _message = result.Succeeded ? "Road route built: " + result.Segments.Count + " plots." : "Route rejected: " + result.Failure;
+                if (result.Succeeded) _view.UpdateRoads(_session.Snapshot());
+            }
+            CancelRoad();
+        }
 
         private void Start()
         {
@@ -102,11 +147,33 @@ namespace LittleEmpires.Unity
             if (Input.GetKeyDown(KeyCode.R)) _tool = Tool.DirtRoad;
             if (Input.GetKeyDown(KeyCode.T)) _tool = Tool.StoneRoad;
             if (Input.GetKeyDown(KeyCode.E)) EndSeason();
-            if (Input.GetKeyDown(KeyCode.Escape)) _tool = Tool.Inspect;
+            if (Input.GetKeyDown(KeyCode.Escape)) { CancelRoad(); _tool = Tool.Inspect; }
+            if (_roadStart.HasValue && (_tool != _roadTool || Input.GetMouseButtonDown(1))) { CancelRoad(); return; }
+            if (_roadStart.HasValue && Input.GetKeyDown(KeyCode.Tab)) { _xFirst = !_xFirst; PreviewRoad(_roadEnd.Value); }
+            var roadTool = _tool == Tool.DirtRoad || _tool == Tool.StoneRoad;
+            GridPosition picked = default;
+            var hasPlot = !MouseInsideHud() && TryPick(out picked);
+            // Definite assignment when the pointer is over UI.
+            if (!hasPlot) picked = default;
+            if (roadTool)
+            {
+                if (Input.GetMouseButtonDown(0) && hasPlot)
+                {
+                    if (clickRoadEndpoints && _roadStart.HasValue) { PreviewRoad(picked); FinishRoad(true); }
+                    else BeginRoad(picked, _tool == Tool.StoneRoad);
+                }
+                if (_roadStart.HasValue && hasPlot) PreviewRoad(picked);
+                if (!clickRoadEndpoints && Input.GetMouseButtonUp(0)) FinishRoad(hasPlot);
+                return;
+            }
+            if (Input.GetMouseButtonDown(0) && hasPlot) ClickTile(picked);
+        }
 
-            if (!Input.GetMouseButtonDown(0) || MouseInsideHud()) return;
+        private bool TryPick(out GridPosition picked)
+        {
+            picked = default;
             var camera = Camera.main;
-            if (camera == null) return;
+            if (camera == null) return false;
 
             var ray = camera.ScreenPointToRay(Input.mousePosition);
             var hits = Physics.RaycastAll(ray, camera.farClipPlane);
@@ -114,12 +181,13 @@ namespace LittleEmpires.Unity
 
             foreach (var hit in hits)
             {
-                if (_view.LargeTerrain != null && _view.LargeTerrain.Pick(hit, out var plot)) { ClickTile(plot); return; }
+                if (_view.LargeTerrain != null && _view.LargeTerrain.Pick(hit, out picked)) return true;
                 var tile = hit.collider.GetComponent<IslandTileTarget>();
                 if (tile == null) continue;
-                ClickTile(tile.Position);
-                return;
+                picked = tile.Position;
+                return true;
             }
+            return false;
         }
 
         internal const float HeaderHeight = 72f;

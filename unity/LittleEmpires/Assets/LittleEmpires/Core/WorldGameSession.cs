@@ -65,6 +65,12 @@ public sealed class WorldGameSession
     public RoadActionResult UpgradeStoneRoad(GridPosition position) =>
         Island.Roads.UpgradeToStone(State, position);
 
+    public RoadPathPreview PreviewRoadPath(IEnumerable<GridPosition> route, bool stone = false) =>
+        Island.Roads.PreviewPath(State, route, stone);
+
+    public RoadPathPreview BuildRoadPath(IEnumerable<GridPosition> route, bool stone = false) =>
+        Island.Roads.BuildPath(State, route, stone);
+
     public bool UpgradeBuilding(int buildingIndex) =>
         Settlement.TryStartUpgrade(State, buildingIndex);
 

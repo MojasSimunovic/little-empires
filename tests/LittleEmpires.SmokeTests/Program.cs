@@ -776,3 +776,4 @@ Check(diagonalIsland.Roads.PlaceDirt(new GridPosition(0, 1)).Succeeded &&
 StrategicEconomyTests.Run(Check);
 
 Console.WriteLine("All smoke tests passed.");
+Console.WriteLine(RoadPathChecks.Run());

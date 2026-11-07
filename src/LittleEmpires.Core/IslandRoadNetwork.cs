@@ -21,7 +21,10 @@ public enum RoadFailure
     RoadAlreadyPresent,
     RoadMissing,
     AlreadyStone,
-    InsufficientStone
+    InsufficientStone,
+    InvalidPath,
+    InsufficientWood,
+    InvalidCrossing
 }
 
 public readonly struct RoadActionResult
@@ -36,7 +39,7 @@ public readonly struct RoadActionResult
 /// a road, never both. Disconnected segments are allowed, but connectivity
 /// is assessed through four-way orthogonal neighbors only.
 /// </summary>
-public sealed class IslandRoadNetwork
+public sealed partial class IslandRoadNetwork
 {
     public const int StoneUpgradeCost = 2;
 

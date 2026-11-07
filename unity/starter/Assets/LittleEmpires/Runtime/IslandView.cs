@@ -10,7 +10,7 @@ namespace LittleEmpires.Unity
     /// no economic, road or building-placement rules live here.
     /// Replace generated geometry with MegaKit prefabs later.
     /// </summary>
-    public sealed class IslandView : MonoBehaviour
+    public sealed partial class IslandView : MonoBehaviour
     {
         private readonly Dictionary<string, Material> _materials = new Dictionary<string, Material>();
         private readonly HashSet<string> _missingPrefabs = new HashSet<string>();
@@ -82,8 +82,7 @@ namespace LittleEmpires.Unity
 
 
             }
-            foreach (var road in state.Roads)
-                DrawRoad(road);
+            UpdateRoads(state);
 
             foreach (var building in state.Buildings)
             {
