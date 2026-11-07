@@ -1,4 +1,9 @@
-namespace LittleEmpires.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LittleEmpires.Core
+{
 
 /// <summary>Start construction before resolving the turn at this zero-based index.</summary>
 public sealed record PlannedConstruction(int TurnIndex, string BuildingId);
@@ -33,8 +38,8 @@ public sealed class ScenarioRunner
         IEnumerable<PlannedConstruction>? constructionPlan = null,
         IEnumerable<PlannedUpgrade>? upgradePlan = null)
     {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(settlement);
+        if (state == null) throw new ArgumentNullException(nameof(state));
+        if (settlement == null) throw new ArgumentNullException(nameof(settlement));
         if (seasons < 1) throw new ArgumentOutOfRangeException(nameof(seasons));
 
         var plan = (constructionPlan ?? Enumerable.Empty<PlannedConstruction>()).ToArray();
@@ -100,4 +105,5 @@ public sealed class ScenarioRunner
 
         return reports.AsReadOnly();
     }
+}
 }
