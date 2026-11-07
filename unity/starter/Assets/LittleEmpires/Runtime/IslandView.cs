@@ -13,14 +13,17 @@ namespace LittleEmpires.Unity
     public sealed class IslandView : MonoBehaviour
     {
         private readonly Dictionary<string, Material> _materials = new Dictionary<string, Material>();
+        public LargeIslandTerrain LargeTerrain;
         private Transform _contentRoot;
         private GameObject _selection;
         private float _offsetX;
         private float _offsetZ;
 
+        public Bounds LandBounds { get; private set; }
+
         public Vector3 WorldPosition(GridPosition position)
         {
-            return new Vector3(position.X - _offsetX, 0f, position.Z - _offsetZ);
+            return LargeTerrain != null ? LargeTerrain.Position(position) : new Vector3(position.X - _offsetX, 0f, position.Z - _offsetZ);
         }
 
         public void Rebuild(WorldSnapshot state)
@@ -47,13 +50,36 @@ namespace LittleEmpires.Unity
             _offsetX = (width - 1) * .5f;
             _offsetZ = (depth - 1) * .5f;
 
-            var ocean = Cube(_contentRoot, "Ocean", new Vector3(0, -.52f, 0),
-                new Vector3(width + 18f, .5f, depth + 18f),
-                new Color(.16f, .54f, .66f), false);
+            var land = new HashSet<GridPosition>();
+            foreach (var tile in state.Terrain)
+                if (tile.Terrain != TerrainKind.Water)
+                    land.Add(tile.Position);
+
+            var landBounds = new Bounds();
+            var first = true;
+            foreach (var plot in land)
+            {
+                var bounds = new Bounds(WorldPosition(plot) + Vector3.up * .75f,
+                    new Vector3(LargeTerrain != null ? LargeTerrain.CellSize : 1.8f, LargeTerrain != null ? 12f : 2.4f, LargeTerrain != null ? LargeTerrain.CellSize : 1.8f));
+                if (first) landBounds = bounds;
+                else landBounds.Encapsulate(bounds);
+                first = false;
+            }
+            LandBounds = first
+                ? new Bounds(Vector3.zero, new Vector3(width, 2f, depth))
+                : landBounds;
+
+            if (LargeTerrain == null) {
+            var ocean = Cube(_contentRoot, "Open water", new Vector3(0, -.51f, 0),
+                new Vector3(width + 200f, .5f, depth + 200f),
+                new Color(.22f, .52f, .57f), false);
+            ocean.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             foreach (var tile in state.Terrain)
-                DrawTile(tile);
+                DrawTile(tile, land);
 
+
+            }
             foreach (var road in state.Roads)
                 DrawRoad(road);
 
@@ -63,9 +89,16 @@ namespace LittleEmpires.Unity
                     DrawBuilding(building);
             }
 
-            _selection = Cube(_contentRoot, "Selected plot",
-                new Vector3(0, .26f, 0), new Vector3(.95f, .035f, .95f),
-                new Color(.98f, .86f, .33f), false);
+            _selection = new GameObject("Selected plot");
+            _selection.transform.SetParent(_contentRoot, false);
+            var marker = new Color(.98f, .86f, .33f);
+            for (var side = -1; side <= 1; side += 2)
+            {
+                Cube(_selection.transform, "Edge", new Vector3(side * .47f, 0, 0),
+                    new Vector3(.035f, .015f, .97f), marker, false);
+                Cube(_selection.transform, "Edge", new Vector3(0, 0, side * .47f),
+                    new Vector3(.9f, .015f, .035f), marker, false);
+            }
             _selection.SetActive(false);
         }
 
@@ -76,29 +109,50 @@ namespace LittleEmpires.Unity
             if (position.HasValue)
             {
                 var place = WorldPosition(position.Value);
-                _selection.transform.position = place + new Vector3(0, .31f, 0);
+                _selection.transform.position = place + new Vector3(0, .26f, 0);
             }
         }
 
-        private void DrawTile(IslandTile tile)
+        private void DrawTile(IslandTile tile, HashSet<GridPosition> land)
         {
             var point = WorldPosition(tile.Position);
+            var water = tile.Terrain == TerrainKind.Water;
+            var coastal = !water && (
+                !land.Contains(new GridPosition(tile.Position.X - 1, tile.Position.Z)) ||
+                !land.Contains(new GridPosition(tile.Position.X + 1, tile.Position.Z)) ||
+                !land.Contains(new GridPosition(tile.Position.X, tile.Position.Z - 1)) ||
+                !land.Contains(new GridPosition(tile.Position.X, tile.Position.Z + 1)));
+
+            if (coastal)
+            {
+                Cylinder(_contentRoot, "Shallows", point + Vector3.down * .25f,
+                    new Vector3(1.79f, .016f, 1.79f), new Color(.34f, .65f, .62f));
+                Cylinder(_contentRoot, "Sandy shore", point + Vector3.down * .12f,
+                    new Vector3(1.52f, .08f, 1.52f), new Color(.76f, .68f, .48f));
+            }
+
             Color ground;
             switch (tile.Terrain)
             {
                 case TerrainKind.Water: ground = new Color(.18f, .58f, .7f); break;
-                case TerrainKind.Forest: ground = new Color(.35f, .56f, .34f); break;
-                case TerrainKind.FertileLand: ground = new Color(.54f, .7f, .39f); break;
-                case TerrainKind.Mountain: ground = new Color(.54f, .59f, .55f); break;
-                default: ground = new Color(.6f, .74f, .45f); break;
+                case TerrainKind.Forest: ground = new Color(.49f, .62f, .37f); break;
+                case TerrainKind.FertileLand: ground = new Color(.54f, .65f, .37f); break;
+                case TerrainKind.Mountain: ground = new Color(.51f, .62f, .40f); break;
+                default: ground = new Color(.53f, .64f, .39f); break;
             }
 
-            var groundY = tile.Terrain == TerrainKind.Water ? -.27f : 0f;
+            var noise = Mathf.PerlinNoise(point.x * .17f + 50f, point.z * .17f + 50f);
+            ground *= Mathf.Lerp(.93f, 1.07f, noise);
+            ground.a = 1f;
+            var groundY = water ? -.45f : 0f;
             var cube = Cube(_contentRoot, "Ground " + tile.Position.X + "," + tile.Position.Z,
                 point + new Vector3(0, groundY, 0),
                 new Vector3(1f, .38f, 1f), ground, true);
             var target = cube.AddComponent<IslandTileTarget>();
             target.Position = tile.Position;
+            var renderer = cube.GetComponent<Renderer>();
+            renderer.enabled = !water;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             if (tile.Terrain == TerrainKind.Forest)
             {
@@ -132,7 +186,7 @@ namespace LittleEmpires.Unity
             var center = WorldPosition(road.Position);
             var stone = road.Surface == RoadSurface.Stone;
             Cube(_contentRoot, stone ? "Stone road" : "Dirt road",
-                center + new Vector3(0, .22f, 0), new Vector3(.88f, .045f, .88f),
+                center + new Vector3(0, .22f, 0), new Vector3(.88f, .045f, .88f) * (LargeTerrain != null ? LargeTerrain.CellSize : 1),
                 stone ? new Color(.66f, .67f, .64f) : new Color(.65f, .51f, .35f),
                 false);
         }
@@ -147,6 +201,7 @@ namespace LittleEmpires.Unity
             home.transform.SetParent(_contentRoot, false);
             home.transform.position = center;
             var root = home.transform;
+            if (LargeTerrain != null) root.localScale = Vector3.one * LargeTerrain.CellSize;
 
             if (!building.IsComplete)
             {
@@ -321,6 +376,7 @@ namespace LittleEmpires.Unity
             if (shader == null) shader = Shader.Find("Standard");
             material = new Material(shader);
             material.color = color;
+            material.SetFloat("_Smoothness", .12f);
             _materials[key] = material;
             return material;
         }

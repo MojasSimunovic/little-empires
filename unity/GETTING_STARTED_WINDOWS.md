@@ -55,7 +55,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\Install-UnityStarter.ps1 -Unity
 4. Press the **Play** button.
 5. Use **Game** tab (not Scene tab) for mouse interaction.
 
-**Controls:** Click terrain to place selected building; right mouse drag to rotate, wheel to zoom, **R** dirt road, **T** stone road upgrade, **E** End Season, **Esc** Inspect. The left panel includes buildings and tax buttons. Inspect a building to adjust worker priority; inspect a completed Marketplace to try trades (requires road connection to completed housing).
+**Controls:** Click terrain to place selected building; right mouse drag to rotate, wheel to zoom, **R** dirt road, **T** stone road upgrade, **E** End Season, **Esc** Inspect. Use the **Build** tab for buildings, roads and upgrades. Use **Settlement** for taxes, worker priority, trade and the last season summary. Select a building with the Inspect tool to adjust its priority or trade at a completed Marketplace with a road connection to completed housing. The top bar keeps resources and End Season visible while either tab scrolls.
 
 The 3D world comes from `WorldGameSession.NewStrategicIsland(seed: 42)`, and `WorldSnapshot` tells Unity what to draw. The building/road costs, terrain validation, tax rates, trade rules, production and workforce decisions **all run inside our real C# simulation**.
 
@@ -81,7 +81,7 @@ This is a **first vertical slice**, not finished Tiny Glade art. It renders:
 | `Input.GetMouseButtonDown` error at runtime | Set Active Input Handling to **Both** and restart Unity. |
 | No toolbar menu | Resolve any C# compile errors first, then check `Assets/LittleEmpires/Editor/CreateStarterScene.cs`. |
 | Scene is grey or pink | Start from Universal 3D template; check URP is installed and set as active pipeline. |
-| Nothing happens when clicking tiles | Make sure Game view is active and click outside the left/right HUD panels. |
+| Nothing happens when clicking tiles | Make sure Game view is active and click a plot in the island viewport below the header and to the right of the dock. |
 | Some building placement fails | This is intentional terrain validation; choose eligible plots or view feedback text. |
 
 ## Architectural note

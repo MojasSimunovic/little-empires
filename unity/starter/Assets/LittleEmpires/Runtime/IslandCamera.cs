@@ -2,43 +2,75 @@ using UnityEngine;
 
 namespace LittleEmpires.Unity
 {
-    /// <summary>
-    /// Tiny orbit camera for the first vertical slice. Uses the classic Unity
-    /// Input API; Project Settings > Player > Active Input Handling should be Both.
-    /// </summary>
     public sealed class IslandCamera : MonoBehaviour
     {
-        public Vector3 Target = Vector3.zero;
-        public float Distance = 19f;
-        public float Yaw = 44f;
-        public float Pitch = 53f;
+        private Camera _camera;
+        private Bounds _land;
+        private float _yaw = 35f;
+        private float _pitch = 55f;
+        private float _zoom = 1f;
+        private bool _orbiting;
+        private Vector3 _pan;
 
-        public void SetTarget(Vector3 point)
+        public void Frame(Camera camera, Bounds land)
         {
-            Target = point;
+            _camera = camera;
+            _land = land;
+            _camera.orthographic = true;
             UpdatePose();
         }
 
         private void LateUpdate()
         {
-            if (Input.GetMouseButton(1))
+            if (_camera == null) return;
+
+            if (Input.GetMouseButtonDown(1))
+                _orbiting = !GameBootstrap.MouseInsideHud();
+            if (!Input.GetMouseButton(1))
+                _orbiting = false;
+
+            if (_orbiting)
             {
-                Yaw += Input.GetAxis("Mouse X") * 4f;
-                Pitch = Mathf.Clamp(Pitch - Input.GetAxis("Mouse Y") * 3f, 25f, 78f);
+                _yaw += Input.GetAxis("Mouse X") * 4f;
+                _pitch = Mathf.Clamp(_pitch - Input.GetAxis("Mouse Y") * 3f, 32f, 78f);
             }
 
-            var scroll = Input.mouseScrollDelta.y;
-            if (Mathf.Abs(scroll) > 0.001f)
-                Distance = Mathf.Clamp(Distance - scroll * 1.6f, 9f, 32f);
+            if (!GameBootstrap.MouseInsideHud())
+                _zoom = Mathf.Clamp(_zoom * Mathf.Exp(-Input.mouseScrollDelta.y * .12f), .06f, 1.35f);
 
             UpdatePose();
         }
 
         private void UpdatePose()
         {
-            var rotation = Quaternion.Euler(Pitch, Yaw, 0f);
-            transform.position = Target - rotation * Vector3.forward * Distance;
-            transform.rotation = rotation;
+            var dock = GameBootstrap.DockWidth / Mathf.Max(1, Screen.width);
+            var header = GameBootstrap.HeaderHeight / Mathf.Max(1, Screen.height);
+            _camera.rect = new Rect(dock, 0, Mathf.Max(.01f, 1f - dock), Mathf.Max(.01f, 1f - header));
+
+            var yawRotation = Quaternion.Euler(0,_yaw,0);
+            var motion = new Vector3(Input.GetAxisRaw("Horizontal"),0,Input.GetAxisRaw("Vertical"));
+            _pan += yawRotation * motion * (_land.size.x*.25f*Time.deltaTime);
+            _pan.x = Mathf.Clamp(_pan.x,-_land.extents.x,_land.extents.x);
+            _pan.z = Mathf.Clamp(_pan.z,-_land.extents.z,_land.extents.z);
+            var rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+            var right = rotation * Vector3.right;
+            var up = rotation * Vector3.up;
+            var horizontal = ProjectedExtent(right);
+            var vertical = ProjectedExtent(up);
+            var aspect = _camera.pixelWidth / (float)Mathf.Max(1, _camera.pixelHeight);
+            _camera.orthographicSize = Mathf.Max(vertical, horizontal / Mathf.Max(.01f, aspect))
+                * 1.06f * _zoom;
+
+            var distance = _land.extents.magnitude + 12f;
+            _camera.farClipPlane = distance * 3f;
+            transform.SetPositionAndRotation(_land.center + _pan - rotation * Vector3.forward * distance, rotation);
+        }
+
+        private float ProjectedExtent(Vector3 axis)
+        {
+            var extents = _land.extents;
+            return Mathf.Abs(axis.x) * extents.x + Mathf.Abs(axis.y) * extents.y +
+                Mathf.Abs(axis.z) * extents.z;
         }
     }
 }

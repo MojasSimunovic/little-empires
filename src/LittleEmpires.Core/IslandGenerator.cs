@@ -33,12 +33,22 @@ public static class IslandGenerator
                 var distance = dx * dx + dz * dz;
 
                 if (x == 0 || z == 0 || x == width - 1 || z == height - 1 ||
-                    distance >= 0.84 + random.NextDouble() * 0.25)
+                    (width < 32 || height < 32) && distance >= 0.84 + random.NextDouble() * 0.25)
                 {
                     terrain[x, z] = TerrainKind.Water;
                     continue;
                 }
 
+                if (width >= 32 && height >= 32)
+                {
+                    var angle = Math.Atan2(dz, dx);
+                    var coast = .78 + .09 * Math.Sin(angle * 3 + seed) + .06 * Math.Cos(angle * 5);
+                    terrain[x, z] = distance > coast ? TerrainKind.Water :
+                        (dx-.38)*(dx-.38)/.075+(dz-.38)*(dz-.38)/.10 < 1 ? TerrainKind.Mountain :
+                        (dx+.46)*(dx+.46)/.06+(dz-.05)*(dz-.05)/.20 < 1 || (dx-.48)*(dx-.48)/.05+(dz+.30)*(dz+.30)/.09 < 1 ? TerrainKind.Forest :
+                        dx*dx/.10+(dz+.43)*(dz+.43)/.065 < 1 ? TerrainKind.FertileLand : TerrainKind.Grassland;
+                    continue;
+                }
                 var roll = random.NextDouble();
                 terrain[x, z] = roll switch
                 {
@@ -53,6 +63,7 @@ public static class IslandGenerator
         // Guaranteed opportunities, independent of the random roll.
         // Preserve a flat approach from the settlement to the guaranteed
         // mountain. Future road networks can use this corridor.
+        if (width < 32 || height < 32) {
         terrain[centerX + 2, centerZ - 1] = TerrainKind.Mountain;
         terrain[centerX + 1, centerZ] = TerrainKind.Grassland;
         terrain[centerX + 1, centerZ - 1] = TerrainKind.Grassland;
@@ -61,6 +72,7 @@ public static class IslandGenerator
         terrain[centerX, centerZ + 1] = TerrainKind.FertileLand;
         terrain[centerX, centerZ] = TerrainKind.Grassland;
 
+        }
         // Make at least one shoreline location suitable for a Fishery.
         var hasUsableShoreline = false;
         GridPosition? firstShoreline = null;
