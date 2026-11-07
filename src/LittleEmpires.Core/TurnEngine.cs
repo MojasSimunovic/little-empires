@@ -1,4 +1,9 @@
-namespace LittleEmpires.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LittleEmpires.Core
+{
 
 /// <summary>A report for one completed seasonal turn.</summary>
 public sealed record TurnSummary(
@@ -37,8 +42,8 @@ public sealed class TurnEngine
     public TurnSummary EndTurn(GameState state, Settlement settlement,
         IslandMap? island = null)
     {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(settlement);
+        if (state == null) throw new ArgumentNullException(nameof(state));
+        if (settlement == null) throw new ArgumentNullException(nameof(settlement));
 
         var startingYear = state.Year;
         var startingSeason = state.Season;
@@ -100,4 +105,5 @@ public sealed class TurnEngine
             staffing.WorkingResidents, staffing.UnemployedResidents,
             production.Produced);
     }
+}
 }
