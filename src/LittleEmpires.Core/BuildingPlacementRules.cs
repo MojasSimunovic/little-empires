@@ -1,4 +1,9 @@
-namespace LittleEmpires.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LittleEmpires.Core
+{
 
 /// <summary>Requirements for a building's placement on an island grid.</summary>
 public enum PlacementRequirement
@@ -25,8 +30,10 @@ public enum PlacementFailure
     RequiresShoreline
 }
 
-public readonly record struct PlacementResult(PlacementFailure Failure)
+public readonly struct PlacementResult
 {
+    public PlacementFailure Failure { get; }
+    public PlacementResult(PlacementFailure failure) { Failure = failure; }
     public bool Allowed => Failure == PlacementFailure.None;
 }
 
@@ -39,8 +46,8 @@ public static class BuildingPlacementRules
     public static PlacementResult Evaluate(
         IslandMap island, GridPosition position, BuildingDefinition definition)
     {
-        ArgumentNullException.ThrowIfNull(island);
-        ArgumentNullException.ThrowIfNull(definition);
+        if (island == null) throw new ArgumentNullException(nameof(island));
+        if (definition == null) throw new ArgumentNullException(nameof(definition));
 
         if (!definition.CanBuildDirectly)
             return new PlacementResult(PlacementFailure.UpgradeOnly);
@@ -83,4 +90,5 @@ public static class BuildingPlacementRules
 
         return new PlacementResult(failure);
     }
+}
 }
