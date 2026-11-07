@@ -187,8 +187,12 @@ namespace LittleEmpires.Unity
         {
             var center = WorldPosition(road.Position);
             var stone = road.Surface == RoadSurface.Stone;
+            var roadScale = LargeTerrain != null
+                ? new Vector3(LargeTerrain.CellSize, .045f, LargeTerrain.CellSize)
+                : new Vector3(.88f, .045f, .88f);
+            var roadHeight = LargeTerrain != null ? .0225f : .22f;
             Cube(_contentRoot, stone ? "Stone road" : "Dirt road",
-                center + new Vector3(0, .22f, 0), new Vector3(.88f, .045f, .88f) * (LargeTerrain != null ? LargeTerrain.CellSize : 1),
+                center + new Vector3(0, roadHeight, 0), roadScale,
                 stone ? new Color(.66f, .67f, .64f) : new Color(.65f, .51f, .35f),
                 false);
         }

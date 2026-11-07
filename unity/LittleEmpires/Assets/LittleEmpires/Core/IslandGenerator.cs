@@ -17,6 +17,16 @@ public static class IslandGenerator
         if (width is < 9 or > 64) throw new ArgumentOutOfRangeException(nameof(width));
         if (height is < 9 or > 64) throw new ArgumentOutOfRangeException(nameof(height));
 
+        if (width == 64 && height == 64)
+        {
+            var authoredTiles = new List<IslandTile>(width * height);
+            for (var z = 0; z < height; z++)
+                for (var x = 0; x < width; x++)
+                    authoredTiles.Add(new IslandTile(new GridPosition(x, z),
+                        LargeIslandGeography.Classify(x, z)));
+            return new IslandMap(width, height, authoredTiles);
+        }
+
         var random = new Random(seed);
         var terrain = new TerrainKind[width, height];
         var centerX = width / 2;

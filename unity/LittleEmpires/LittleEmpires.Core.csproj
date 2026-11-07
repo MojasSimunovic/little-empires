@@ -58,6 +58,7 @@
     <Compile Include="Assets\LittleEmpires\Core\SettlementHappinessSystem.cs" />
     <Compile Include="Assets\LittleEmpires\Core\PopulationGrowthSystem.cs" />
     <Compile Include="Assets\LittleEmpires\Core\GameState.cs" />
+    <Compile Include="Assets\LittleEmpires\Core\LargeIslandGeography.cs" />
     <Compile Include="Assets\LittleEmpires\Core\BuildingCatalog.cs" />
     <Compile Include="Assets\LittleEmpires\Core\Construction.cs" />
     <Compile Include="Assets\LittleEmpires\Core\IslandGenerator.cs" />

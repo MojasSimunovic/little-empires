@@ -20,11 +20,18 @@ namespace LittleEmpires.Unity
             }
             _kinds = new TerrainKind[_width, _depth];
             foreach (var tile in snapshot.Terrain) _kinds[tile.Position.X, tile.Position.Z] = tile.Terrain;
-            _elevations = new float[_width,_depth];
-            for (var z=0;z<_depth;z++) for(var x=0;x<_width;x++) {
-                var sum=0f;
-                for(var dz=-2;dz<=2;dz++) for(var dx=-2;dx<=2;dx++) sum+=RawHeight(x+dx,z+dz);
-                _elevations[x,z]=sum/25;
+            if (_width != 64 || _depth != 64)
+            {
+                _elevations = new float[_width, _depth];
+                for (var z = 0; z < _depth; z++)
+                    for (var x = 0; x < _width; x++)
+                    {
+                        var sum = 0f;
+                        for (var dz = -2; dz <= 2; dz++)
+                            for (var dx = -2; dx <= 2; dx++)
+                                sum += RawHeight(x + dx, z + dz);
+                        _elevations[x, z] = sum / 25;
+                    }
             }
             var data = new TerrainData { heightmapResolution = 513, alphamapResolution = 256,
                 size = new Vector3(_width * CellSize, 80, _depth * CellSize) };
@@ -33,14 +40,20 @@ namespace LittleEmpires.Unity
                 for (var x = 0; x < 513; x++)
                     heights[z, x] = Height(x / 512f * _width - .5f, z / 512f * _depth - .5f) / 80;
             data.SetHeights(0, 0, heights);
-            var colors = new[] { new Color(.48f,.62f,.29f), new Color(.78f,.71f,.48f),
-                new Color(.48f,.49f,.43f), new Color(.36f,.49f,.24f), new Color(.57f,.62f,.30f) };
+            var colors = new[] { new Color(.40f,.56f,.28f), new Color(.80f,.70f,.48f),
+                new Color(.48f,.47f,.42f), new Color(.30f,.44f,.25f), new Color(.61f,.62f,.30f) };
             var layers = new TerrainLayer[colors.Length];
             for (var i = 0; i < layers.Length; i++)
             {
-                var texture = new Texture2D(32, 32);
-                for (var z = 0; z < 32; z++) for (var x = 0; x < 32; x++)
-                    texture.SetPixel(x,z,colors[i] * Mathf.Lerp(.94f,1.06f,Mathf.PerlinNoise(x*.3f,z*.3f)));
+                var texture = new Texture2D(128, 128);
+                for (var z = 0; z < 128; z++)
+                    for (var x = 0; x < 128; x++)
+                    {
+                        var broad = Mathf.PerlinNoise(x * .055f + i * 7, z * .055f);
+                        var grain = Mathf.PerlinNoise(x * .31f, z * .31f + i * 9);
+                        texture.SetPixel(x, z, colors[i] *
+                            Mathf.Lerp(.81f, 1.17f, broad * .7f + grain * .3f));
+                    }
                 texture.Apply();
                 layers[i] = new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(14,14) };
             }
@@ -51,10 +64,15 @@ namespace LittleEmpires.Unity
                 var gx = x / 255f * _width - .5f;
                 var gz = z / 255f * _depth - .5f;
                 var h = Height(gx,gz);
-                var beach = 1 - Mathf.SmoothStep(0,1,Mathf.InverseLerp(4,8,h));
-                var rock = Mathf.SmoothStep(0,1,Mathf.InverseLerp(16,29,h));
-                var kind = Kind(Mathf.RoundToInt(gx),Mathf.RoundToInt(gz));
-                var layer = kind == TerrainKind.Forest ? 3 : kind == TerrainKind.FertileLand ? 4 : 0;
+                var shore = _width == 64 && _depth == 64
+                    ? (float)LargeIslandGeography.SampleCoastalShape(gx, gz) : h;
+                var beach = 1 - Mathf.SmoothStep(0,1,Mathf.InverseLerp(4,9,shore));
+                var rock = Mathf.SmoothStep(0,1,Mathf.InverseLerp(19,29,h));
+                var slope = Mathf.Abs(Height(gx + .35f, gz) - Height(gx - .35f, gz)) +
+                            Mathf.Abs(Height(gx, gz + .35f) - Height(gx, gz - .35f));
+                var cliff = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(5, 13, slope));
+                beach *= 1 - cliff * .75f;
+                rock = Mathf.Max(rock, cliff * .85f);
                 weights[z,x,1] = beach;
                 weights[z,x,2] = (1-beach)*rock;
                 for(var dz=-2;dz<=2;dz++) for(var dx=-2;dx<=2;dx++) {
@@ -91,11 +109,14 @@ namespace LittleEmpires.Unity
         {
             if (Kind(x,z) == TerrainKind.Water) return 0;
             var hill = Mathf.PerlinNoise(x*.065f+17,z*.065f+31);
-            return Kind(x,z) == TerrainKind.Mountain ? 19 + hill*23 : 9 + hill*3;
+            return Kind(x,z) == TerrainKind.Mountain ? 19 + hill*23 :
+                (float)LargeIslandGeography.TownElevation;
         }
 
         private float Height(float x, float z)
         {
+            if (_width == 64 && _depth == 64)
+                return (float)LargeIslandGeography.SampleElevation(x, z);
             var ix = Mathf.FloorToInt(x);
             var iz = Mathf.FloorToInt(z);
             // Broad flat plot interiors, with smooth transitions between them.

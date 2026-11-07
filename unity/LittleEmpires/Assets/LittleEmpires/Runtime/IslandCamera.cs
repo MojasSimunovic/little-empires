@@ -17,6 +17,13 @@ namespace LittleEmpires.Unity
             _camera = camera;
             _land = land;
             _camera.orthographic = true;
+            if (land.size.x > 200f)
+            {
+                _yaw = 24f;
+                _pitch = 47f;
+                _zoom = .93f;
+                _pan = new Vector3(0f, -8f, 0f);
+            }
             UpdatePose();
         }
 
