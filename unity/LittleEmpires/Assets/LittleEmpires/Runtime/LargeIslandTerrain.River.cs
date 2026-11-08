@@ -14,12 +14,12 @@ namespace LittleEmpires.Unity
             var triangles = new int[steps*6];
             for (var i=0;i<=steps;i++)
             {
-                var z = i/(float)steps * (float)IslandRiver.SourceZ;
-                var x = (float)IslandRiver.CenterX(z);
+                var z = (float)IslandRiver.MouthZ + i/(float)steps * ((float)IslandRiver.SourceZ - IslandRiver.MouthZ);
+                var x = (float)IslandRiver.VisualCenterX(z);
                 var y = (float)IslandRiver.WaterElevation(x,z)-8;
                 for (var side=0;side<2;side++)
                 {
-                    vertices[i*2+side] = new Vector3((x+.5f-_width/2f + (side==0?-.34f:.34f))*CellSize,y,(z+.5f-_depth/2f)*CellSize);
+                    vertices[i*2+side] = new Vector3((x+.5f-_width/2f + (side==0?-.47f:.47f))*CellSize,y,(z+.5f-_depth/2f)*CellSize);
                     uv[i*2+side] = new Vector2(side,z*.6f);
                 }
                 if(i==steps) continue;
