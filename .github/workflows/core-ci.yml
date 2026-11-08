@@ -34,6 +34,8 @@ jobs:
             diff -q "$file" "unity/LittleEmpires/Assets/LittleEmpires/Editor/$name"
           done
           diff -q tests/LittleEmpires.SmokeTests/RoadPathChecks.cs unity/LittleEmpires/Assets/LittleEmpires/Editor/RoadPathChecks.cs
+      - name: Verify serialized Unity nature assets (T-4)
+        run: python3 tools/check_unity_art_wiring.py
       - name: Install .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
