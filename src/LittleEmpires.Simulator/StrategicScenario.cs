@@ -41,10 +41,11 @@ internal static class StrategicScenario
             new Settlement(population: 50, economyMode: EconomyMode.Strategic),
             island);
         session.ChangeTaxes(TaxPolicy.High);
-        Ensure(session.PlaceBuilding(new GridPosition(3, 2), BuildingCatalog.VillageHallId),
+        var hallPlot = new GridPosition(11, 3);
+        Ensure(session.PlaceBuilding(hallPlot, BuildingCatalog.VillageHallId),
             "Could not found Village Hall");
         session.EndSeason();
-        Ensure(session.UpgradeBuilding(0), "Could not begin Town Hall upgrade");
+        Ensure(session.UpgradeBuilding(island.OccupiedSites[hallPlot].InstanceId), "Could not begin Town Hall upgrade");
         session.EndSeason();
         session.EndSeason();
         Ensure(session.Settlement.Tier == SettlementTier.Town,
@@ -97,8 +98,9 @@ internal static class StrategicScenario
             {
                 // Trading takes place between turns once the two-season
                 // Marketplace is complete and connected to housing by roads.
-                var sale = session.Trade(2, TradeDirection.Sell, Resource.Wood, 10);
-                var purchase = session.Trade(2, TradeDirection.Buy, Resource.Stone, 3);
+                var marketId = island.OccupiedSites[new GridPosition(4, 4)].InstanceId;
+                var sale = session.Trade(marketId, TradeDirection.Sell, Resource.Wood, 10);
+                var purchase = session.Trade(marketId, TradeDirection.Buy, Resource.Stone, 3);
                 Ensure(sale.Succeeded && purchase.Succeeded, "Marketplace trading");
                 Console.WriteLine($"  MARKET: sold 10 wood for {sale.TotalCoins} coins; " +
                     $"bought 3 stone for {purchase.TotalCoins} coins");

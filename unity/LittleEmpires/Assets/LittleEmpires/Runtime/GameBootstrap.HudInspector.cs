@@ -16,14 +16,14 @@ namespace LittleEmpires.Unity
                 if (_inspectedIndex == index && ReferenceEquals(_inspectedSnapshot, _snapshot)) return;
                 _inspectedIndex = index;
                 _inspectedSnapshot = _snapshot;
-                if (index < 0 || index >= _snapshot.Buildings.Count)
+                var building = _snapshot.Buildings.FirstOrDefault(entry => entry.InstanceId == index);
+                if (building == null)
                 {
                     _inspector.style.display = DisplayStyle.None;
                     return;
                 }
                 _inspector.style.display = DisplayStyle.Flex;
                 _body.Clear();
-                var building = _snapshot.Buildings[index];
                 var definition = BuildingCatalog.Get(building.Id);
                 _buildingName.text = building.Name;
                 Detail(_body, building.IsUpgrading ? $"Upgrading · {building.UpgradeSeasonsRemaining} season(s) remaining" :
@@ -45,6 +45,7 @@ namespace LittleEmpires.Unity
                     Trading(building);
                 if (BuildingUpgradeCatalog.TryGet(building.Id, out var upgrade))
                     Upgrade(building, upgrade);
+                DemolitionControls(building);
             }
 
             private void Administration(BuildingView hall)
@@ -98,8 +99,8 @@ namespace LittleEmpires.Unity
                 {
                     var row = Row(_body);
                     Detail(row, resource.ToString(), "grow");
-                    row.Add(Button($"Buy {units}", () => _game.Trade(TradeDirection.Buy, resource, units)));
-                    row.Add(Button($"Sell {units}", () => _game.Trade(TradeDirection.Sell, resource, units)));
+                    row.Add(Button($"Buy {units}", () => _game.Trade(building.InstanceId, TradeDirection.Buy, resource, units)));
+                    row.Add(Button($"Sell {units}", () => _game.Trade(building.InstanceId, TradeDirection.Sell, resource, units)));
                 }
             }
 
@@ -118,7 +119,7 @@ namespace LittleEmpires.Unity
                 if (reason != null) Detail(_body, reason, "warning");
                 var button = Button($"Upgrade to {destination.Name}", () =>
                 {
-                    var success = _game._session.UpgradeBuilding(building.Index);
+                    var success = _game._session.UpgradeBuilding(building.InstanceId);
                     _game._message = success ? $"{destination.Name} upgrade started." : "Upgrade requirements are unmet.";
                     if (success) _game.Refresh();
                 });

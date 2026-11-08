@@ -172,5 +172,14 @@ public sealed class IslandMap
         foreach (var cell in position.Rectangle(building.Definition.Width, building.Definition.Height))
             _occupants.Add(cell, building);
     }
+    internal void Release(Building building)
+    {
+        if (!building.Position.HasValue) return;
+        var cells = building.Position.Value.Rectangle(building.Definition.Width, building.Definition.Height).ToArray();
+        if (cells.Any(cell => !_occupants.TryGetValue(cell, out var occupant) || !ReferenceEquals(occupant, building)))
+            throw new InvalidOperationException("The building footprint does not match island occupancy.");
+        foreach (var cell in cells)
+            _occupants.Remove(cell);
+    }
 }
 }

@@ -9,7 +9,7 @@ namespace LittleEmpires.Core
 
 /// <summary>Read-only, engine-independent rendering information for one building.</summary>
 public sealed record BuildingView(
-    int Index, string Id, string Name, GridPosition? Position,
+    int InstanceId, string Id, string Name, GridPosition? Position,
     bool IsComplete, int SeasonsRemaining, bool IsUpgrading,
     int UpgradeSeasonsRemaining, int HousingCapacity,
     int WorkersRequired, int WorkPriority, int UnitsTradedThisSeason, int Width = 1, int Height = 1)
@@ -89,18 +89,22 @@ public sealed class WorldGameSession
     public RoadPathPreview BuildRoadPath(IEnumerable<GridPosition> route, bool stone = false) =>
         Island.Roads.BuildPath(State, route, stone);
 
-    public bool UpgradeBuilding(int buildingIndex) =>
-        Settlement.TryStartUpgrade(State, buildingIndex);
+    public bool UpgradeBuilding(int instanceId) =>
+        Settlement.TryStartUpgrade(State, Settlement.IndexOfBuilding(instanceId));
 
     public void ChangeTaxes(TaxPolicy policy) => Settlement.SetTaxPolicy(policy);
 
-    public bool ChangeWorkPriority(int buildingIndex, int priority) =>
-        Settlement.SetWorkPriority(buildingIndex, priority);
+    public bool ChangeWorkPriority(int instanceId, int priority) =>
+        Settlement.SetWorkPriority(Settlement.IndexOfBuilding(instanceId), priority);
 
     public TradeResult Trade(
-        int marketBuildingIndex, TradeDirection direction, Resource resource, int units) =>
+        int marketInstanceId, TradeDirection direction, Resource resource, int units) =>
         MarketplaceTrading.Execute(
-            State, Settlement, Island, marketBuildingIndex, direction, resource, units);
+            State, Settlement, Island, Settlement.IndexOfBuilding(marketInstanceId), direction, resource, units);
+
+    public DemolitionResult PreviewDemolition(int instanceId) => Settlement.PreviewDemolition(instanceId);
+
+    public DemolitionResult DemolishBuilding(int instanceId) => Settlement.Demolish(Island, instanceId);
 
     public TurnSummary EndSeason() => _turnEngine.EndTurn(State, Settlement, Island);
 
@@ -111,8 +115,8 @@ public sealed class WorldGameSession
                 State.Resources.ToDictionary(entry => entry.Key, entry => entry.Value)),
             Array.AsReadOnly(Island.Tiles.ToArray()),
             Array.AsReadOnly(Settlement.Buildings
-                .Select((building, index) => new BuildingView(
-                    index, building.Definition.Id, building.Definition.Name,
+                .Select(building => new BuildingView(
+                    building.InstanceId, building.Definition.Id, building.Definition.Name,
                     building.Position, building.IsComplete, building.SeasonsRemaining,
                     building.IsUpgrading, building.UpgradeSeasonsRemaining,
                     building.Definition.HousingCapacity,

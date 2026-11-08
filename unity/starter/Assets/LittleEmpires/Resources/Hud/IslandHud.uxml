@@ -24,5 +24,15 @@
         </ui:VisualElement>
         <ui:Label name="feedback" class="surface feedback" picking-mode="Ignore" />
         <ui:VisualElement name="tooltip" class="surface tooltip" />
+        <ui:VisualElement name="demolition-overlay" class="modal-overlay">
+            <ui:VisualElement class="surface modal">
+                <ui:Label name="demolition-title" class="heading" />
+                <ui:Label name="demolition-warning" class="detail modal-warning" />
+                <ui:VisualElement class="row modal-actions">
+                    <ui:Button name="cancel-demolition" text="Cancel" />
+                    <ui:Button name="confirm-demolition" text="Demolish" class="destructive" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

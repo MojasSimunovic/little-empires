@@ -185,6 +185,11 @@ namespace LittleEmpires.Unity
         private void Update()
         {
             if (_session == null) return;
+            if (_hud != null && _hud.HasModal)
+            {
+                if (Input.GetKeyDown(KeyCode.Escape)) _hud.CloseDemolition();
+                return;
+            }
 
             if (Input.GetKeyDown(KeyCode.R)) SelectTool(Tool.DirtRoad);
             if (Input.GetKeyDown(KeyCode.T)) SelectTool(Tool.StoneRoad);
@@ -247,12 +252,14 @@ namespace LittleEmpires.Unity
             _view.Highlight(position);
             var snapshot = _session.Snapshot();
             _selectedBuilding = -1;
+            BuildingView selected = null;
 
             foreach (var building in snapshot.Buildings)
             {
                 if (building.OccupiedPlots.Contains(position))
                 {
-                    _selectedBuilding = building.Index;
+                    selected = building;
+                    _selectedBuilding = building.InstanceId;
                     _view.Highlight(building.Position, building.Width, building.Height);
                     break;
                 }
@@ -263,12 +270,12 @@ namespace LittleEmpires.Unity
             // Existing Hall can always be opened by clicking its plot, even with
             // a build tool selected. Do not duplicate it or route input to its prefab.
             if (_selectedBuilding >= 0 &&
-                IsCivicHall(snapshot.Buildings[_selectedBuilding].Id) &&
+                IsCivicHall(selected.Id) &&
                 _tool != Tool.DirtRoad && _tool != Tool.StoneRoad)
             {
                 _tool = Tool.Inspect;
                 _showInspector = true;
-                _message = snapshot.Buildings[_selectedBuilding].Name + " selected.";
+                _message = selected.Name + " selected.";
                 return;
             }
 
@@ -276,7 +283,7 @@ namespace LittleEmpires.Unity
             {
                 case Tool.Inspect:
                     _message = _selectedBuilding >= 0
-                        ? snapshot.Buildings[_selectedBuilding].Name + " selected."
+                        ? selected.Name + " selected."
                         : "Plot (" + position.X + "," + position.Z + ") selected.";
                     return;
 
@@ -328,7 +335,7 @@ namespace LittleEmpires.Unity
             {
                 if (buildingId == BuildingCatalog.VillageHallId)
                 {
-                    _selectedBuilding = _session.Settlement.Buildings.Count - 1;
+                    _selectedBuilding = _session.Settlement.Buildings.Last().InstanceId;
                     _showInspector = true;
                     _tool = Tool.Inspect;
                 }
@@ -390,9 +397,9 @@ namespace LittleEmpires.Unity
                 _message = "Priority must be from -10 to 10.";
         }
 
-        private void Trade(TradeDirection direction, Resource resource, int units)
+        private void Trade(int instanceId, TradeDirection direction, Resource resource, int units)
         {
-            var outcome = _session.Trade(_selectedBuilding, direction, resource, units);
+            var outcome = _session.Trade(instanceId, direction, resource, units);
             _message = outcome.Succeeded
                 ? direction + " " + units + " " + resource + " for " + outcome.TotalCoins + " coins."
                 : "Trading failed: " + outcome.Failure;

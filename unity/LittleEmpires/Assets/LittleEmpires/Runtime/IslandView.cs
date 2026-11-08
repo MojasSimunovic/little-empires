@@ -243,36 +243,42 @@ namespace LittleEmpires.Unity
                 false);
         }
 
+        private readonly Dictionary<int, int> _buildingVariants = new Dictionary<int, int>();
+        private int _housingCount, _farmCount;
+
         private void SyncBuildings(WorldSnapshot state)
         {
             var seen = new HashSet<int>();
-            var housingCount = 0;
-            var farmCount = 0;
             foreach (var building in state.Buildings)
             {
                 // Snapshots retain settlement order, including the same entry after an upgrade.
                 var isHousing = building.Id == BuildingCatalog.CottageId ||
                     building.Id == BuildingCatalog.TownhouseId;
-                var variant = isHousing ? housingCount++ % BuildingPrefabRegistry.HousingVariantCount :
-                    building.Id == BuildingCatalog.FarmId ? farmCount++ % BuildingPrefabRegistry.FarmVariantCount : 0;
+
                 if (!building.Position.HasValue) continue;
-                seen.Add(building.Index);
+                seen.Add(building.InstanceId);
+                if (!_buildingVariants.TryGetValue(building.InstanceId, out var variant))
+                {
+                    variant = isHousing ? _housingCount++ % BuildingPrefabRegistry.HousingVariantCount :
+                        building.Id == BuildingCatalog.FarmId ? _farmCount++ % BuildingPrefabRegistry.FarmVariantCount : 0;
+                    _buildingVariants.Add(building.InstanceId, variant);
+                }
                 var p = building.Position.Value;
                 // These fields, not season/year or worker priority, determine the mesh.
                 var signature = building.Id + "|" + p.X + "," + p.Z + "|" +
                     building.IsComplete + "|" + building.IsUpgrading + "|" + variant;
-                if (_buildingSignatures.TryGetValue(building.Index, out var previous) &&
-                    previous == signature && _buildingObjects.TryGetValue(building.Index, out var existing) &&
+                if (_buildingSignatures.TryGetValue(building.InstanceId, out var previous) &&
+                    previous == signature && _buildingObjects.TryGetValue(building.InstanceId, out var existing) &&
                     existing != null)
                     continue;
 
-                if (_buildingObjects.TryGetValue(building.Index, out var old) && old != null)
+                if (_buildingObjects.TryGetValue(building.InstanceId, out var old) && old != null)
                 {
                     old.SetActive(false);
                     Destroy(old);
                 }
-                _buildingObjects[building.Index] = DrawBuilding(building, variant);
-                _buildingSignatures[building.Index] = signature;
+                _buildingObjects[building.InstanceId] = DrawBuilding(building, variant);
+                _buildingSignatures[building.InstanceId] = signature;
             }
 
             var missing = new List<int>();
@@ -280,7 +286,12 @@ namespace LittleEmpires.Unity
                 if (!seen.Contains(key)) missing.Add(key);
             foreach (var key in missing)
             {
-                if (_buildingObjects[key] != null) Destroy(_buildingObjects[key]);
+                if (_buildingObjects[key] != null)
+                {
+                    _buildingObjects[key].SetActive(false);
+                    Destroy(_buildingObjects[key]);
+                }
+                _buildingVariants.Remove(key);
                 _buildingObjects.Remove(key);
                 _buildingSignatures.Remove(key);
             }
@@ -289,7 +300,7 @@ namespace LittleEmpires.Unity
         private GameObject DrawBuilding(BuildingView building, int variant)
         {
             var center = FootprintCenter(building.Position.Value, building.Width, building.Height);
-            var home = new GameObject(building.Name + " #" + building.Index);
+            var home = new GameObject(building.Name + " #" + building.InstanceId);
             home.transform.SetParent(_contentRoot, false);
             home.transform.position = center;
             var root = home.transform;

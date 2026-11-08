@@ -117,12 +117,14 @@ namespace LittleEmpires.Unity
                     _root.Q("tabs").Add(tab);
                 }
                 _root.Q("tabs").Add(Button("Inspect", () => game.SelectTool(Tool.Inspect)));
+                BindDemolition();
                 ShowCategory(0);
                 Sync();
             }
 
             public bool Picks(Vector2 screenPosition)
             {
+                if (HasModal) return true;
                 if (_root.panel == null) return false;
                 var point = RuntimePanelUtils.ScreenToPanel(_root.panel,
                     new Vector2(screenPosition.x, Screen.height - screenPosition.y));

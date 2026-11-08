@@ -778,6 +778,7 @@ Check(diagonalIsland.Roads.PlaceDirt(new GridPosition(0, 1)).Succeeded &&
 StrategicEconomyTests.Run(Check);
 CivicHallTests.Run(Check);
 BuildingFootprintTests.Run(Check);
+DemolitionTests.Run(Check);
 TownProgressionTests.Run(Check);
 LargeIslandFoundationChecks.Run(Check);
 

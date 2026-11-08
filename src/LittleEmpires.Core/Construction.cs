@@ -41,6 +41,7 @@ public sealed record BuildingDefinition(
 
 public sealed class Building
 {
+    public int InstanceId { get; }
     public BuildingDefinition Definition { get; private set; }
     public GridPosition? Position { get; }
     public int WorkPriority { get; private set; }
@@ -52,8 +53,9 @@ public sealed class Building
     public bool IsUpgrading => _pendingUpgrade is not null;
     private BuildingUpgradeDefinition? _pendingUpgrade;
 
-    internal Building(BuildingDefinition definition, GridPosition? position = null)
+    internal Building(int instanceId, BuildingDefinition definition, GridPosition? position = null)
     {
+        InstanceId = instanceId;
         Definition = definition;
         Position = position;
         SeasonsRemaining = definition.ConstructionSeasons;
@@ -95,6 +97,7 @@ public sealed class Building
 public sealed class Settlement
 {
     private readonly List<Building> _buildings = new();
+    private int _nextBuildingId;
     public IReadOnlyList<Building> Buildings => _buildings;
     public int Population { get; private set; }
     public int Happiness { get; private set; }
@@ -206,7 +209,7 @@ public sealed class Settlement
 
         // Turn commands are single-threaded. The complete footprint was validated above,
         // so these changes cannot fail independently in normal gameplay.
-        var building = new Building(definition, position);
+        var building = new Building(_nextBuildingId++, definition, position);
         island.Occupy(position, building);
         _buildings.Add(building);
         return true;
@@ -223,13 +226,13 @@ public sealed class Settlement
         definition.Validate();
         if (!CanStartBuilding(definition) || !state.TrySpend(definition.Cost))
             return false;
-        _buildings.Add(new Building(definition));
+        _buildings.Add(new Building(_nextBuildingId++, definition));
         return true;
     }
 
     /// <summary>
     /// Upgrade a completed building by its index in Buildings.
-    /// Indices remain stable until building removal is introduced.
+    /// World commands resolve persistent identities before calling this legacy API.
     /// </summary>
     public bool TryStartUpgrade(GameState state, int buildingIndex)
     {
@@ -248,6 +251,32 @@ public sealed class Settlement
         if (!state.TrySpend(upgrade.Cost)) return false;
         building.StartUpgrade(upgrade);
         return true;
+    }
+
+    internal int IndexOfBuilding(int instanceId) =>
+        _buildings.FindIndex(building => building.InstanceId == instanceId);
+
+    internal DemolitionResult PreviewDemolition(int instanceId)
+    {
+        var index = IndexOfBuilding(instanceId);
+        if (index < 0) return new DemolitionResult(DemolitionFailure.BuildingNotFound);
+        var building = _buildings[index];
+        if (building.IsComplete && building.Definition.HousingCapacity > 0)
+        {
+            var shortfall = Population - (HousingCapacity - building.Definition.HousingCapacity);
+            if (shortfall > 0) return new DemolitionResult(DemolitionFailure.InsufficientHousing, shortfall);
+        }
+        return new DemolitionResult(DemolitionFailure.None);
+    }
+
+    internal DemolitionResult Demolish(IslandMap island, int instanceId)
+    {
+        var preview = PreviewDemolition(instanceId);
+        if (!preview.Succeeded) return preview;
+        var index = IndexOfBuilding(instanceId);
+        island.Release(_buildings[index]);
+        _buildings.RemoveAt(index);
+        return preview;
     }
 
     internal IReadOnlyList<string> ProgressUpgrades()

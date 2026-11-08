@@ -82,3 +82,23 @@
 .feedback { position: absolute; align-self: center; top: 78px; white-space: normal; max-width: 370px; }
 .tooltip { position: absolute; width: 280px; display: none; padding: 12px; }
 #road-mode { margin-top: 5px; display: none; }
+
+.modal-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(13, 22, 16, 0.58);
+    justify-content: center;
+    align-items: center;
+    display: none;
+}
+.modal { width: 388px; padding: 18px; }
+.modal-warning { margin: 10px 0 12px; }
+.modal-actions { justify-content: flex-end; }
+.hud Button.destructive {
+    background-color: rgb(118, 54, 46);
+    border-color: rgb(178, 102, 80);
+}
+.hud Button.destructive:hover { background-color: rgb(153, 68, 56); }
