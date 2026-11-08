@@ -21,6 +21,7 @@ namespace LittleEmpires.Unity
         private readonly Dictionary<int, string> _buildingSignatures = new Dictionary<int, string>();
         private Transform _contentRoot;
         private GameObject _selection;
+        private readonly List<GameObject> _footprintPreview = new List<GameObject>();
         private float _offsetX;
         private float _offsetZ;
 
@@ -118,14 +119,45 @@ namespace LittleEmpires.Unity
             _selection.SetActive(false);
         }
 
-        public void Highlight(GridPosition? position)
+        private Vector3 FootprintCenter(GridPosition anchor, int width, int height)
+        {
+            var first = WorldPosition(anchor);
+            var last = WorldPosition(new GridPosition(anchor.X + width - 1, anchor.Z + height - 1));
+            return (first + last) * .5f;
+        }
+
+        public void ShowFootprintPreview(GridPosition? anchor, int width = 1, int height = 1, bool valid = false)
+        {
+            var count = anchor.HasValue ? width * height : 0;
+            var color = valid ? new Color(.29f, .77f, .34f) : new Color(.87f, .24f, .17f);
+            var cellSize = LargeTerrain != null ? LargeTerrain.CellSize : 1f;
+            for (var i = 0; i < count; i++)
+            {
+                if (i == _footprintPreview.Count)
+                {
+                    var marker = Cube(transform, "Building footprint preview", Vector3.zero,
+                        new Vector3(cellSize * .93f, .035f, cellSize * .93f), color, false);
+                    _footprintPreview.Add(marker);
+                }
+                var cell = new GridPosition(anchor.Value.X + i % width, anchor.Value.Z + i / width);
+                var preview = _footprintPreview[i];
+                preview.transform.position = WorldPosition(cell) + Vector3.up * .15f;
+                preview.GetComponent<Renderer>().sharedMaterial = PreviewMaterial(color);
+                preview.SetActive(true);
+            }
+            for (var i = count; i < _footprintPreview.Count; i++)
+                _footprintPreview[i].SetActive(false);
+        }
+
+        public void Highlight(GridPosition? position, int width = 1, int height = 1)
         {
             if (_selection == null) return;
             _selection.SetActive(position.HasValue);
             if (position.HasValue)
             {
-                var place = WorldPosition(position.Value);
-                _selection.transform.position = place + new Vector3(0, .26f, 0);
+                var cellSize = LargeTerrain != null ? LargeTerrain.CellSize : 1f;
+                _selection.transform.localScale = new Vector3(width * cellSize, cellSize, height * cellSize);
+                _selection.transform.position = FootprintCenter(position.Value, width, height) + Vector3.up * .26f;
             }
         }
 
@@ -256,7 +288,7 @@ namespace LittleEmpires.Unity
 
         private GameObject DrawBuilding(BuildingView building, int variant)
         {
-            var center = WorldPosition(building.Position.Value);
+            var center = FootprintCenter(building.Position.Value, building.Width, building.Height);
             var home = new GameObject(building.Name + " #" + building.Index);
             home.transform.SetParent(_contentRoot, false);
             home.transform.position = center;
@@ -266,7 +298,7 @@ namespace LittleEmpires.Unity
             if (!building.IsComplete)
             {
                 Cube(root, "Construction foundation",
-                    new Vector3(0, .095f, 0), new Vector3(.82f, .19f, .8f),
+                    new Vector3(0, .095f, 0), new Vector3(.82f * building.Width, .19f, .8f * building.Height),
                     new Color(.73f, .64f, .45f), false);
                 for (var i = -1; i <= 1; i += 2)
                     Cube(root, "Scaffolding", new Vector3(i * .34f, .52f, .36f),

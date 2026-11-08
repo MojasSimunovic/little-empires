@@ -54,17 +54,31 @@ public static class BuildingPlacementRules
 
         if (!definition.CanBuildDirectly)
             return new PlacementResult(PlacementFailure.UpgradeOnly);
-        if (!island.TryGetTile(position, out var tile))
+        if (!island.Contains(position) || definition.Width > island.Width - position.X ||
+            definition.Height > island.Height - position.Z)
             return new PlacementResult(PlacementFailure.OutsideMap);
+        foreach (var cell in position.Rectangle(definition.Width, definition.Height))
+        {
+            var failure = EvaluateCell(island, cell, definition.SiteRequirement);
+            if (failure != PlacementFailure.None) return new PlacementResult(failure);
+        }
+
+        return new PlacementResult(island.BuildingFootprintRelief(position, definition.Width, definition.Height) >
+            LargeIslandGeography.MaximumBuildingRelief ? PlacementFailure.RequiresLevelSite : PlacementFailure.None);
+    }
+
+    private static PlacementFailure EvaluateCell(IslandMap island, GridPosition position, PlacementRequirement requirement)
+    {
+        var tile = island.GetTile(position);
         if (tile.Terrain == TerrainKind.Water || tile.Terrain == TerrainKind.River)
-            return new PlacementResult(PlacementFailure.Water);
+            return PlacementFailure.Water;
         if (island.OccupiedSites.ContainsKey(position))
-            return new PlacementResult(PlacementFailure.AlreadyOccupied);
+            return PlacementFailure.AlreadyOccupied;
         if (island.Roads.HasRoad(position))
-            return new PlacementResult(PlacementFailure.RoadPresent);
+            return PlacementFailure.RoadPresent;
 
         var flatLand = tile.Terrain is TerrainKind.Grassland or TerrainKind.FertileLand;
-        var failure = definition.SiteRequirement switch
+        return requirement switch
         {
             PlacementRequirement.FlatLand =>
                 flatLand ? PlacementFailure.None : PlacementFailure.RequiresFlatLand,
@@ -88,17 +102,8 @@ public static class BuildingPlacementRules
                     ? PlacementFailure.None : PlacementFailure.RequiresShoreline,
 
             _ => throw new ArgumentOutOfRangeException(
-                nameof(definition), "Unknown building placement requirement.")
+                nameof(requirement), "Unknown building placement requirement.")
         };
-
-        // A terrain type alone does not guarantee a level physical foundation.
-        // The real 64x64 Unity island has slopes at the coast and mountain;
-        // reject those plots instead of floating a building from its center height.
-        if (failure == PlacementFailure.None && island.BuildingFootprintRelief(position) >
-                LargeIslandGeography.MaximumBuildingRelief)
-            return new PlacementResult(PlacementFailure.RequiresLevelSite);
-
-        return new PlacementResult(failure);
     }
 }
 }

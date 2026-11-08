@@ -34,6 +34,8 @@ public sealed record BuildingUpgradeDefinition(
         var from = BuildingCatalog.Get(FromBuildingId);
         var to = BuildingCatalog.Get(ToBuildingId);
         // Housing must not be lost. Non-housing civic buildings reuse this path.
+        if (from.Width != to.Width || from.Height != to.Height)
+            throw new ArgumentException("Upgrades must preserve the building footprint.");
         if (to.HousingCapacity < from.HousingCapacity ||
             (from.HousingCapacity > 0 && to.HousingCapacity == from.HousingCapacity))
             throw new ArgumentException("Housing upgrades must increase capacity.");

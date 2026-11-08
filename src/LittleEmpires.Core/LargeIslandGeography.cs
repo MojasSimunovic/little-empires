@@ -119,6 +119,12 @@ public static class LargeIslandGeography
     // floating the building from a single center-height sample.
     public static double BuildingFootprintRelief(GridPosition plot)
     {
+        var (min, max) = BuildingHeightRange(plot);
+        return max - min;
+    }
+
+    public static (double Min, double Max) BuildingHeightRange(GridPosition plot)
+    {
         double min = double.MaxValue, max = double.MinValue;
         for (var z = 0; z < 7; z++)
             for (var x = 0; x < 7; x++)
@@ -129,7 +135,7 @@ public static class LargeIslandGeography
                 min = Math.Min(min, height);
                 max = Math.Max(max, height);
             }
-        return max - min;
+        return (min, max);
     }
 
     private static double CoastalElevation(double shape)

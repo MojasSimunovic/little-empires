@@ -63,10 +63,10 @@ public static class BuildingCatalog
             new BuildingDefinition(
                 VillageHallId, "Village Hall",
                 Map((Resource.Wood, 35), (Resource.Stone, 15), (Resource.Coins, 30)),
-                1, Map()),
+                1, Map(), Width: 2, Height: 2),
             new BuildingDefinition(
                 TownHallId, "Town Hall", Map(), 1, Map(),
-                CanBuildDirectly: false),
+                CanBuildDirectly: false, Width: 2, Height: 2),
             new BuildingDefinition(
                 LumberMillId, "Sawmill",
                 Map((Resource.Wood, 35), (Resource.Stone, 15), (Resource.Coins, 30)),

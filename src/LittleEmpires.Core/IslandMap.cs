@@ -13,6 +13,14 @@ public readonly struct GridPosition : IEquatable<GridPosition>
     public int X { get; }
     public int Z { get; }
     public GridPosition(int x, int z) { X = x; Z = z; }
+    // The anchor is the minimum X/Z cell.
+    public IEnumerable<GridPosition> Rectangle(int width, int height)
+    {
+        for (var z = 0; z < height; z++)
+            for (var x = 0; x < width; x++)
+                yield return new GridPosition(X + x, Z + z);
+    }
+
     public bool Equals(GridPosition other) => X == other.X && Z == other.Z;
     public override bool Equals(object? obj) => obj is GridPosition other && Equals(other);
     public override int GetHashCode() { unchecked { return (X * 397) ^ Z; } }
@@ -52,7 +60,7 @@ public sealed class IslandMap
     private readonly IReadOnlyDictionary<GridPosition, Building> _readOnlyOccupants;
     private readonly IReadOnlyList<IslandTile> _allTiles;
 
-    private readonly Func<GridPosition, double>? _footprintRelief;
+    private readonly Func<GridPosition, (double Min, double Max)>? _heightRange;
 
     public int Width { get; }
     public int Height { get; }
@@ -63,12 +71,12 @@ public sealed class IslandMap
 
     public IslandMap(int width, int height, IEnumerable<IslandTile> tiles,
         IReadOnlyDictionary<GridPosition, BridgeAxis>? riverCrossings = null,
-        Func<GridPosition, double>? footprintRelief = null)
+        Func<GridPosition, (double Min, double Max)>? heightRange = null)
     {
         if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
         if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
         if (tiles == null) throw new ArgumentNullException(nameof(tiles));
-        _footprintRelief = footprintRelief;
+        _heightRange = heightRange;
         Width = width;
         Height = height;
         _tiles = new IslandTile[width, height];
@@ -104,9 +112,18 @@ public sealed class IslandMap
         Roads = new IslandRoadNetwork(this);
     }
 
-    public double BuildingFootprintRelief(GridPosition position) =>
-        _footprintRelief?.Invoke(position) ?? (Width == 64 && Height == 64
-            ? LargeIslandGeography.BuildingFootprintRelief(position) : 0);
+    public double BuildingFootprintRelief(GridPosition position, int width = 1, int height = 1)
+    {
+        double low = double.PositiveInfinity, high = double.NegativeInfinity;
+        foreach (var cell in position.Rectangle(width, height))
+        {
+            var range = _heightRange?.Invoke(cell) ?? (Width == 64 && Height == 64
+                ? LargeIslandGeography.BuildingHeightRange(cell) : (0d, 0d));
+            low = Math.Min(low, range.Item1);
+            high = Math.Max(high, range.Item2);
+        }
+        return high - low;
+    }
 
     public bool Contains(GridPosition position) =>
         position.X >= 0 && position.X < Width &&
@@ -152,9 +169,8 @@ public sealed class IslandMap
     internal void Occupy(GridPosition position, Building building)
     {
         if (building == null) throw new ArgumentNullException(nameof(building));
-        if (!Contains(position) || GetTile(position).Terrain == TerrainKind.Water || GetTile(position).Terrain == TerrainKind.River ||
-            Roads.HasRoad(position) || !_occupants.TryAdd(position, building))
-            throw new InvalidOperationException("The chosen island tile is unavailable.");
+        foreach (var cell in position.Rectangle(building.Definition.Width, building.Definition.Height))
+            _occupants.Add(cell, building);
     }
 }
 }

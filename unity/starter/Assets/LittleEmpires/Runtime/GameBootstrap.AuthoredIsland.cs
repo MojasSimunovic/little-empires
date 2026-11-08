@@ -18,7 +18,7 @@ namespace LittleEmpires.Unity
             var origin = authoredTerrain.transform.position;
             var river = authoredRiver.sharedMesh.vertices;
             var tiles = new List<IslandTile>(size * size);
-            var relief = new double[size, size];
+            var heights = new (double Min, double Max)[size, size];
             var paint = data.GetAlphamaps(0, 0, data.alphamapWidth, data.alphamapHeight);
             var crossings = new Dictionary<GridPosition, BridgeAxis>
             {
@@ -59,11 +59,11 @@ namespace LittleEmpires.Unity
                             low = Mathf.Min(low, y);
                             high = Mathf.Max(high, y);
                         }
-                    relief[x, z] = high - low;
+                    heights[x, z] = (low, high);
                 }
             }
 
-            return new IslandMap(size, size, tiles, crossings, plot => relief[plot.X, plot.Z]);
+            return new IslandMap(size, size, tiles, crossings, plot => heights[plot.X, plot.Z]);
         }
 
         private float RiverCenterAt(float worldZ, Vector3[] vertices)

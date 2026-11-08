@@ -122,8 +122,7 @@ namespace LittleEmpires.Unity
             if (_natureRoot == null && _authoredNature.Count == 0) return;
             var occupied = new HashSet<GridPosition>();
             foreach (var building in state.Buildings)
-                if (building.Position.HasValue)
-                    occupied.Add(building.Position.Value);
+                occupied.UnionWith(building.OccupiedPlots);
             foreach (var road in state.Roads)
                 occupied.Add(road.Position);
 

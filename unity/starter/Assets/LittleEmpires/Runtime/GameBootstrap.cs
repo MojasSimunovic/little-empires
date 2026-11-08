@@ -198,6 +198,14 @@ namespace LittleEmpires.Unity
             _view.SetCrossingMarkersHighlighted(roadTool);
             GridPosition picked = default;
             var hasPlot = !MouseInsideHud() && TryPick(out picked);
+            var buildingId = BuildingIdForTool(_tool);
+            var definition = buildingId == null ? null : BuildingCatalog.Get(buildingId);
+            if (hasPlot && definition != null && (definition.Width > 1 || definition.Height > 1))
+                _view.ShowFootprintPreview(picked, definition.Width, definition.Height,
+                    _session.PreviewBuilding(picked, buildingId).Allowed);
+            else
+                _view.ShowFootprintPreview(null);
+
             // Definite assignment when the pointer is over UI.
             if (!hasPlot) picked = default;
             if (roadTool)
@@ -253,9 +261,10 @@ namespace LittleEmpires.Unity
 
             foreach (var building in snapshot.Buildings)
             {
-                if (building.Position.HasValue && building.Position.Value == position)
+                if (building.OccupiedPlots.Contains(position))
                 {
                     _selectedBuilding = building.Index;
+                    _view.Highlight(building.Position, building.Width, building.Height);
                     break;
                 }
             }
@@ -314,6 +323,10 @@ namespace LittleEmpires.Unity
             {
                 _message = preview.Failure switch
                 {
+                    PlacementFailure.OutsideMap => "The full building footprint must fit on the island.",
+                    PlacementFailure.Water => "Part of the footprint is underwater.",
+                    PlacementFailure.AlreadyOccupied => "Part of the footprint is occupied by a building.",
+                    PlacementFailure.RoadPresent => "Part of the footprint crosses a road.",
                     PlacementFailure.RequiresLevelSite =>
                         "This plot is too steep for a building. Choose a level shelf or terrace.",
                     PlacementFailure.RequiresSettlementTier =>
@@ -364,7 +377,10 @@ namespace LittleEmpires.Unity
         {
             _cachedSnapshot = _session.Snapshot();
             _view.Rebuild(_cachedSnapshot);
-            _view.Highlight(_selected);
+            if (_selected.HasValue && _session.Island.TryGetBuilding(_selected.Value, out var building))
+                _view.Highlight(building.Position, building.Definition.Width, building.Definition.Height);
+            else
+                _view.Highlight(_selected);
         }
 
         private void EndSeason()

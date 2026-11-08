@@ -12,7 +12,11 @@ public sealed record BuildingView(
     int Index, string Id, string Name, GridPosition? Position,
     bool IsComplete, int SeasonsRemaining, bool IsUpgrading,
     int UpgradeSeasonsRemaining, int HousingCapacity,
-    int WorkersRequired, int WorkPriority, int UnitsTradedThisSeason);
+    int WorkersRequired, int WorkPriority, int UnitsTradedThisSeason, int Width = 1, int Height = 1)
+{
+    public IEnumerable<GridPosition> OccupiedPlots => Position.HasValue
+        ? Position.Value.Rectangle(Width, Height) : Enumerable.Empty<GridPosition>();
+}
 
 public sealed record RoadView(GridPosition Position, RoadSurface Surface, BridgeAxis Bridge = BridgeAxis.None);
 
@@ -113,7 +117,7 @@ public sealed class WorldGameSession
                     building.IsUpgrading, building.UpgradeSeasonsRemaining,
                     building.Definition.HousingCapacity,
                     building.Definition.WorkersRequired, building.WorkPriority,
-                    building.UnitsTradedThisSeason))
+                    building.UnitsTradedThisSeason, building.Definition.Width, building.Definition.Height))
                 .ToArray()),
             Array.AsReadOnly(Island.Roads.Segments
                 .Select(entry => new RoadView(entry.Key, entry.Value,

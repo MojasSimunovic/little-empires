@@ -159,8 +159,16 @@ public sealed partial class IslandRoadNetwork
     /// This is not yet a requirement for initial construction/production.
     /// </summary>
     public bool IsBuildingRoadConnected(GridPosition buildingPosition) =>
-        _island.OccupiedSites.ContainsKey(buildingPosition) &&
-        _island.Neighbours(buildingPosition).Any(tile => HasRoad(tile.Position));
+        AdjacentRoads(buildingPosition).Any();
+
+    private IEnumerable<GridPosition> AdjacentRoads(GridPosition position)
+    {
+        if (!_island.TryGetBuilding(position, out var building) || building?.Position == null)
+            return Enumerable.Empty<GridPosition>();
+
+        return building.Position.Value.Rectangle(building.Definition.Width, building.Definition.Height)
+            .SelectMany(_island.Neighbours).Select(tile => tile.Position).Where(HasRoad).Distinct();
+    }
 
     /// <summary>
     /// Buildings are connected if each has at least one adjacent road and
@@ -174,12 +182,10 @@ public sealed partial class IslandRoadNetwork
             !_island.OccupiedSites.ContainsKey(secondBuilding))
             return false;
 
-        var starts = _island.Neighbours(firstBuilding)
-            .Select(tile => tile.Position).Where(HasRoad).ToArray();
+        var starts = AdjacentRoads(firstBuilding).ToArray();
         if (starts.Length == 0) return false;
 
-        var targets = _island.Neighbours(secondBuilding)
-            .Select(tile => tile.Position).Where(HasRoad).ToHashSet();
+        var targets = AdjacentRoads(secondBuilding).ToHashSet();
         if (targets.Count == 0) return false;
 
         return starts.Any(start => ConnectedComponent(start).Any(targets.Contains));

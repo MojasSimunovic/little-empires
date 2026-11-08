@@ -19,11 +19,15 @@ public sealed record BuildingDefinition(
     PlacementRequirement SiteRequirement = PlacementRequirement.FlatLand,
     int WorkersRequired = 0,
     int UpkeepCoinsPerSeason = 0,
-    SettlementTier RequiredTier = SettlementTier.Village)
+    SettlementTier RequiredTier = SettlementTier.Village,
+    int Width = 1,
+    int Height = 1)
 {
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(Id)) throw new ArgumentException("Building ID is required.");
+        if (Width < 1) throw new ArgumentOutOfRangeException(nameof(Width));
+        if (Height < 1) throw new ArgumentOutOfRangeException(nameof(Height));
         if (ConstructionSeasons < 1) throw new ArgumentOutOfRangeException(nameof(ConstructionSeasons));
         if (HousingCapacity < 0) throw new ArgumentOutOfRangeException(nameof(HousingCapacity));
         if (WorkersRequired < 0) throw new ArgumentOutOfRangeException(nameof(WorkersRequired));
@@ -200,7 +204,7 @@ public sealed class Settlement
         if (!state.TrySpend(definition.Cost))
             return false;
 
-        // Turn commands are single-threaded. The tile was validated above,
+        // Turn commands are single-threaded. The complete footprint was validated above,
         // so these changes cannot fail independently in normal gameplay.
         var building = new Building(definition, position);
         island.Occupy(position, building);
