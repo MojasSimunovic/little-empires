@@ -36,41 +36,41 @@ public static class CivicHallTests
 
         var upgrade = CivicUpgradeCatalog.VillageHallToTownHall;
         upgrade.Validate();
-        check(upgrade.MinimumPopulation == 100 && upgrade.ConstructionSeasons == 2 &&
+        check(upgrade.MinimumPopulation == 50 && upgrade.ConstructionSeasons == 2 &&
               upgrade.Cost[Resource.Coins] == 300, "Civic threshold and costs are configured");
 
         var treasury = new GameState(wood: 200, stone: 80, food: 600, coins: 900);
-        var mature = new Settlement(population: 100, economyMode: EconomyMode.Strategic);
+        var mature = new Settlement(population: 50, economyMode: EconomyMode.Strategic);
         check(mature.TryStartConstruction(treasury, BuildingCatalog.VillageHallId),
             "Mature settlement starts its Hall");
         var engine = new TurnEngine();
         engine.EndTurn(treasury, mature);
         mature.SetTaxPolicy(TaxPolicy.High);
         var sameBuilding = mature.Buildings[0];
-        // Test the exact boundary: 99 is not a Town; 100 is.
-        mature.SetPopulation(99);
+        // Test the exact boundary: 49 is not a Town; 50 is.
+        mature.SetPopulation(49);
         var coinsBeforeThreshold = treasury.Get(Resource.Coins);
         check(!mature.TryStartUpgrade(treasury, 0) &&
               treasury.Get(Resource.Coins) == coinsBeforeThreshold,
-            "99 residents cannot start a Town Hall upgrade or lose coins");
-        mature.SetPopulation(100);
+            "49 residents cannot start a Town Hall upgrade or lose coins");
+        mature.SetPopulation(50);
         check(mature.TryStartUpgrade(treasury, 0) &&
               treasury.Get(Resource.Wood) == 105 &&
               treasury.Get(Resource.Stone) == 40 &&
-              treasury.Get(Resource.Coins) == 670,
+              treasury.Get(Resource.Coins) == 570,
             "Mature Hall upgrade charges exactly once");
         check(sameBuilding.IsUpgrading && sameBuilding.UpgradeSeasonsRemaining == 2 &&
               sameBuilding.Definition.Id == BuildingCatalog.VillageHallId,
             "Building identity and Village Hall state persist during upgrade");
         var first = engine.EndTurn(treasury, mature);
-        check(first.TaxIncome == 150 && first.CompletedUpgrades.Count == 0 &&
+        check(first.TaxIncome == 75 && first.CompletedUpgrades.Count == 0 &&
               sameBuilding.UpgradeSeasonsRemaining == 1,
             "Taxes continue during construction");
         var second = engine.EndTurn(treasury, mature);
         check(second.CompletedUpgrades.Single() == "Village Hall → Town Hall" &&
               ReferenceEquals(sameBuilding, mature.Buildings[0]) &&
               sameBuilding.Definition.Id == BuildingCatalog.TownHallId &&
-              mature.TaxPolicy == TaxPolicy.High && mature.HousingCapacity == 100,
+              mature.TaxPolicy == TaxPolicy.High && mature.HousingCapacity == 50,
             "Hall upgrade keeps the building, housing and tax policy");
         check(!mature.TryStartUpgrade(treasury, 0), "Upgraded Hall cannot upgrade again");
     }

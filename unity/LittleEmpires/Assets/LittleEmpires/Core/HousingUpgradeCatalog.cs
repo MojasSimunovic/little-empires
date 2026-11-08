@@ -87,7 +87,7 @@ public static class CivicUpgradeCatalog
             [Resource.Coins] = 300
         }),
         ConstructionSeasons: 2,
-        MinimumPopulation: 100);
+        MinimumPopulation: 50);
 
     public static bool TryGet(string? fromBuildingId, out BuildingUpgradeDefinition? upgrade)
     {

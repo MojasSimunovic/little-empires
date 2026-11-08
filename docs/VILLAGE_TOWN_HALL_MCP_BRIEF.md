@@ -11,7 +11,7 @@
 - The **Town Hall** is its only upgrade: one upgrade-only target, not another building the player can place.
 - Clicking either building opens **Settlement Administration**, not an economy running in a MonoBehaviour.
 - Show population/housing, happiness, treasury/resources; 4 tax policies; projected next-season taxes; last-season **actual** tax income, operating upkeep, workforce and food. Do not present tax minus upkeep as total cash flow (trade and construction are excluded).
-- Upgrade: at least **100 residents**, **60 wood, 25 stone, 300 coins**, paid once; **2 seasons**; original Hall remains functional while upgrading. These are **provisional balance values**.
+- Upgrade: at least **50 residents**, **60 wood, 25 stone, 300 coins**, paid once; **2 seasons**; original Hall remains functional while upgrading. These are **provisional balance values**.
 - Village Hall placement: **35 wood, 15 stone, 30 coins**, one season construction. Neither hall generates population, goods, extra taxes or automatic buffs.
 - Use existing `WorldGameSession` methods `PlaceBuilding`, `UpgradeBuilding`, `ChangeTaxes`, `Snapshot`, `EndSeason`. `src/LittleEmpires.Core` is authoritative; do NOT make separate economy/tax scripts.
 - Reuse exactly the housing upgrade infrastructure: `BuildingUpgradeDefinition`, `Building.StartUpgrade/ProgressUpgrade`, `Settlement.TryStartUpgrade`. The C# branch already implements this.
@@ -86,7 +86,7 @@ The feature branch's `GameBootstrap.cs` already has the initial **OnGUI** inspec
 - Predicted next-season tax income = `TaxationSystem.CalculateIncome(snapshot.Population, snapshot.TaxPolicy)`. Label this an estimate, since population can change.
 - Last completed season **actual** tax income and **actual** operating upkeep from `TurnSummary`; employed/unemployed, food consumed/shortage.
 - An operating balance showing last-season taxes minus upkeep **excluding** construction spending, trade and other changes; do not call it full "net income".
-- Village Hall only: visible upgrade requirements, population threshold, one-click upgrade action. Grey out upgrade if unfinished, already upgrading, population below 100, or materials insufficient.
+- Village Hall only: visible upgrade requirements, population threshold, one-click upgrade action. Grey out upgrade if unfinished, already upgrading, population below 50, or materials insufficient.
 - Town Hall: keep the same finance UI, no further upgrade button.
 
 **Interactions:** `ChangeTaxes` updates policy and UI immediately; financial collection happens at **End Season**. Tax buttons should be disabled before Hall construction completes. `UpgradeBuilding` spends cost once, upgrade completes after 2 End Season actions. Taxes should keep flowing during the upgrade.
@@ -101,7 +101,7 @@ The feature branch's `GameBootstrap.cs` already has the initial **OnGUI** inspec
 4. End Season once; Village Hall prefab appears. Click it: tax controls and administration report show up; normal building inspection and existing cottage upgrades still work.
 5. Change from Normal to High; verify projected revenue changes immediately, actual tax collection/happiness impact happens on the next season, and no collection happens merely from clicking tax policy.
 6. Low-population Village Hall cannot upgrade and does not spend resources.
-7. In a controlled test settlement with 100+ residents and sufficient stockpile: upgrade costs **60 wood + 25 stone + 300 coins** one time. First season preserves Village Hall and tax collection; second season changes model and ID to Town Hall in the exact same position.
+7. In a controlled test settlement with 50+ residents and sufficient stockpile: upgrade costs **60 wood + 25 stone + 300 coins** one time. First season preserves Village Hall and tax collection; second season changes model and ID to Town Hall in the exact same position.
 8. Inspect upgraded Town Hall: prior tax policy persists, numbers are correct, and upgrade button is absent. Town Hall cannot be duplicated.
 9. Verify both prefabs in daylight, at gameplay zoom, and in rain/dark lighting if readily available; test -Z door orientation and footprint (no clipping/overlap with roads/adjacent houses).
 10. Repeat with multiple nearby cottage/townhouse visual variants; verify no prefab references, transforms, materials, scene data, bridges or other ongoing visual work were changed unintentionally.
