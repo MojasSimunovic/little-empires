@@ -34,11 +34,21 @@ internal static class StrategicScenario
         }
 
         var island = new IslandMap(13, 9, tiles);
+        // This demo intentionally begins at Town tier to exercise unlocked
+        // industry. Actual gameplay still starts as an 8-resident Village.
         var session = new WorldGameSession(
-            new GameState(wood: 600, stone: 300, food: 250, coins: 500),
-            new Settlement(population: 20, economyMode: EconomyMode.Strategic),
+            new GameState(wood: 800, stone: 400, food: 1000, coins: 1000),
+            new Settlement(population: 50, economyMode: EconomyMode.Strategic),
             island);
         session.ChangeTaxes(TaxPolicy.High);
+        Ensure(session.PlaceBuilding(new GridPosition(3, 2), BuildingCatalog.VillageHallId),
+            "Could not found Village Hall");
+        session.EndSeason();
+        Ensure(session.UpgradeBuilding(0), "Could not begin Town Hall upgrade");
+        session.EndSeason();
+        session.EndSeason();
+        Ensure(session.Settlement.Tier == SettlementTier.Town,
+            "Town Hall upgrade did not unlock industry");
 
         for (var x = 1; x <= 10; x++)
             Ensure(session.PlaceDirtRoad(new GridPosition(x, 3)).Succeeded, "Industry road");
@@ -61,9 +71,9 @@ internal static class StrategicScenario
         foreach (var (id, position) in buildings)
             Ensure(session.PlaceBuilding(position, id), $"Could not start {id}");
 
-        Console.WriteLine("LITTLE EMPIRES | Strategic Economy Integration");
-        Console.WriteLine("Terrain, roads, +50% wood mill, +25% food processing, taxes, wages, marketplace");
-        Console.WriteLine("Starting population 20 | Tax policy: High | Turn count: " + seasons);
+        Console.WriteLine("LITTLE EMPIRES | Strategic Town Economy Integration");
+        Console.WriteLine("Terrain, roads, Sawmill, Food Workshop, taxes, staffing, marketplace");
+        Console.WriteLine("Starting Town population 50 | Tax policy: High | Turn count: " + seasons);
         Console.WriteLine();
 
         for (var i = 0; i < seasons; i++)
@@ -87,8 +97,8 @@ internal static class StrategicScenario
             {
                 // Trading takes place between turns once the two-season
                 // Marketplace is complete and connected to housing by roads.
-                var sale = session.Trade(1, TradeDirection.Sell, Resource.Wood, 10);
-                var purchase = session.Trade(1, TradeDirection.Buy, Resource.Stone, 3);
+                var sale = session.Trade(2, TradeDirection.Sell, Resource.Wood, 10);
+                var purchase = session.Trade(2, TradeDirection.Buy, Resource.Stone, 3);
                 Ensure(sale.Succeeded && purchase.Succeeded, "Marketplace trading");
                 Console.WriteLine($"  MARKET: sold 10 wood for {sale.TotalCoins} coins; " +
                     $"bought 3 stone for {purchase.TotalCoins} coins");
