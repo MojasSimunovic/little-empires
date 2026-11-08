@@ -15,3 +15,15 @@ MonoBehaviour:
   entries:
   - BuildingId: cottage
     Prefab: {fileID: 6234162167581034015, guid: 1f0deb0a43c07924fa40153e1d12a023, type: 3}
+  cottages:
+  - {fileID: 3325131485386816289, guid: ae99ddaf78fa45d4d8b80803795f5361, type: 3}
+  - {fileID: 5583305845795246860, guid: 3047d763f81ef6247a955946b4d44361, type: 3}
+  - {fileID: 6865173870014043810, guid: 2d894aad3b61d9d4c87156eebc4222a9, type: 3}
+  - {fileID: 1053331336614379476, guid: 5ae445b15e0c2c24cb129881ca295b3d, type: 3}
+  - {fileID: 7031121616314767514, guid: 9fc7d9ff03238ae43966cce03f0ee7a0, type: 3}
+  townhouses:
+  - {fileID: 6732271692657917944, guid: 28b21c53154dbfd41a891b8e84d1bbb5, type: 3}
+  - {fileID: 2248552167211891792, guid: 004b7b8dd6c6dad44a51923ab1819023, type: 3}
+  - {fileID: 1873464601189816199, guid: 365a2eaed2e27b448865053b6ca5f456, type: 3}
+  - {fileID: 7815378171270486625, guid: beeaee12e06a0eb4e8a8b9c43195b013, type: 3}
+  - {fileID: 7183005018773385874, guid: 004f144adbca98945afbd364073094a9, type: 3}

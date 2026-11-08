@@ -15,8 +15,19 @@ namespace LittleEmpires.Unity
 
         [SerializeField] private Entry[] entries = Array.Empty<Entry>();
 
-        public GameObject Find(string buildingId)
+        [SerializeField] private GameObject[] cottages = Array.Empty<GameObject>();
+        [SerializeField] private GameObject[] townhouses = Array.Empty<GameObject>();
+
+        public const int HousingVariantCount = 5;
+
+        public GameObject Find(string buildingId, int housingVariant = 0)
         {
+            var variants = buildingId == LittleEmpires.Core.BuildingCatalog.CottageId ? cottages :
+                buildingId == LittleEmpires.Core.BuildingCatalog.TownhouseId ? townhouses : null;
+            if (variants != null && housingVariant >= 0 && housingVariant < variants.Length &&
+                variants[housingVariant] != null)
+                return variants[housingVariant];
+
             foreach (var entry in entries)
                 if (entry.BuildingId == buildingId)
                     return entry.Prefab;

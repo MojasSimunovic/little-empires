@@ -214,14 +214,19 @@ namespace LittleEmpires.Unity
         private void SyncBuildings(WorldSnapshot state)
         {
             var seen = new HashSet<int>();
+            var housingCount = 0;
             foreach (var building in state.Buildings)
             {
+                // Snapshots retain settlement order, including the same entry after an upgrade.
+                var isHousing = building.Id == BuildingCatalog.CottageId ||
+                    building.Id == BuildingCatalog.TownhouseId;
+                var variant = isHousing ? housingCount++ % BuildingPrefabRegistry.HousingVariantCount : 0;
                 if (!building.Position.HasValue) continue;
                 seen.Add(building.Index);
                 var p = building.Position.Value;
                 // These fields, not season/year or worker priority, determine the mesh.
                 var signature = building.Id + "|" + p.X + "," + p.Z + "|" +
-                    building.IsComplete + "|" + building.IsUpgrading;
+                    building.IsComplete + "|" + building.IsUpgrading + "|" + variant;
                 if (_buildingSignatures.TryGetValue(building.Index, out var previous) &&
                     previous == signature && _buildingObjects.TryGetValue(building.Index, out var existing) &&
                     existing != null)
@@ -232,7 +237,7 @@ namespace LittleEmpires.Unity
                     old.SetActive(false);
                     Destroy(old);
                 }
-                _buildingObjects[building.Index] = DrawBuilding(building);
+                _buildingObjects[building.Index] = DrawBuilding(building, variant);
                 _buildingSignatures[building.Index] = signature;
             }
 
@@ -247,7 +252,7 @@ namespace LittleEmpires.Unity
             }
         }
 
-        private GameObject DrawBuilding(BuildingView building)
+        private GameObject DrawBuilding(BuildingView building, int variant)
         {
             var center = WorldPosition(building.Position.Value);
             var home = new GameObject(building.Name + " #" + building.Index);
@@ -267,7 +272,7 @@ namespace LittleEmpires.Unity
                 return home;
             }
 
-            var prefab = BuildingPrefabs != null ? BuildingPrefabs.Find(building.Id) : null;
+            var prefab = BuildingPrefabs != null ? BuildingPrefabs.Find(building.Id, variant) : null;
             if (prefab != null)
             {
                 // The cottage's 5.84 x 5.56 unit footprint fits one large-island plot.
