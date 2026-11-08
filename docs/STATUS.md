@@ -12,7 +12,7 @@ Updated 2026-11-08. This file describes the **committed code**, not a guarantee 
 
 ## Active stabilization issues
 - [Review PR #46](https://github.com/MojasSimunovic/little-empires/pull/46) (draft, not merged). It proposes fixes for G-1/G-2 river alignment and mouth, G-3 crossing discoverability, G-4 safe End Season key, G-5 selection outline, P-1 snapshot cache, R-1 script sync CI, R-2 ignore/remove generated IDE files, and this status documentation.
-- **T-1 / T-2:** Fishery shoreline foundations and Quarry mountain plots are too steep; need physically flat pads/ledges, numeric slope tests and Unity screenshots. No claim of fix yet.
+- **T-1 / T-2:** [Draft PR #49](https://github.com/MojasSimunovic/little-empires/pull/49) implements level shoreline Fishery shelves, mountain Quarry ledges, C# footprint relief validation, grounded procedural foundations and new C# smoke tests. Automated results are verified; actual Unity Game view screenshots and material/shape approval remain mandatory before claiming visual completion.
 - **P-2:** `IslandView.Rebuild` still recreates buildings on world refresh (roads are more incremental). Plan a dictionary of building instances keyed by ID/index and update changed ones only.
 - **T-3/T-4/T-6:** coarse square biome masks, procedural flat-color textures and no imported Quaternius Nature MegaKit vegetation in playable LargeIsland. Terrain art pass still pending.
 - **B-1:** URP shaders are found by string and may be stripped from standalone Windows build; needs real material references + Windows player validation.
