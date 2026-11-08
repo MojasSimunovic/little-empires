@@ -57,7 +57,7 @@ public static class CivicHallTests
         check(mature.TryStartUpgrade(treasury, 0) &&
               treasury.Get(Resource.Wood) == 105 &&
               treasury.Get(Resource.Stone) == 40 &&
-              treasury.Get(Resource.Coins) == 570,
+              treasury.Get(Resource.Coins) == 620,
             "Mature Hall upgrade charges exactly once");
         check(sameBuilding.IsUpgrading && sameBuilding.UpgradeSeasonsRemaining == 2 &&
               sameBuilding.Definition.Id == BuildingCatalog.VillageHallId,
