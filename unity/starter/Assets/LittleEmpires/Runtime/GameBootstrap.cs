@@ -285,7 +285,9 @@ namespace LittleEmpires.Unity
             var preview = _session.PreviewBuilding(position, buildingId);
             if (!preview.Allowed)
             {
-                _message = "Cannot build here: " + preview.Failure;
+                _message = preview.Failure == PlacementFailure.RequiresLevelSite
+                    ? "This plot is too steep for a building. Choose a level shelf or terrace."
+                    : "Cannot build here: " + preview.Failure;
                 return;
             }
 
