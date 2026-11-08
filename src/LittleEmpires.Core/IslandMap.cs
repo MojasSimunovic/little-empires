@@ -52,6 +52,8 @@ public sealed class IslandMap
     private readonly IReadOnlyDictionary<GridPosition, Building> _readOnlyOccupants;
     private readonly IReadOnlyList<IslandTile> _allTiles;
 
+    private readonly Func<GridPosition, double>? _footprintRelief;
+
     public int Width { get; }
     public int Height { get; }
     public IReadOnlyList<IslandTile> Tiles => _allTiles;
@@ -60,11 +62,13 @@ public sealed class IslandMap
     public IReadOnlyDictionary<GridPosition, BridgeAxis> RiverCrossings { get; }
 
     public IslandMap(int width, int height, IEnumerable<IslandTile> tiles,
-        IReadOnlyDictionary<GridPosition, BridgeAxis>? riverCrossings = null)
+        IReadOnlyDictionary<GridPosition, BridgeAxis>? riverCrossings = null,
+        Func<GridPosition, double>? footprintRelief = null)
     {
         if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
         if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
         if (tiles == null) throw new ArgumentNullException(nameof(tiles));
+        _footprintRelief = footprintRelief;
         Width = width;
         Height = height;
         _tiles = new IslandTile[width, height];
@@ -99,6 +103,10 @@ public sealed class IslandMap
         _readOnlyOccupants = new ReadOnlyDictionary<GridPosition, Building>(_occupants);
         Roads = new IslandRoadNetwork(this);
     }
+
+    public double BuildingFootprintRelief(GridPosition position) =>
+        _footprintRelief?.Invoke(position) ?? (Width == 64 && Height == 64
+            ? LargeIslandGeography.BuildingFootprintRelief(position) : 0);
 
     public bool Contains(GridPosition position) =>
         position.X >= 0 && position.X < Width &&

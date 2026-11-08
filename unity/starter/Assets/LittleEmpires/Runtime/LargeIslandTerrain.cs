@@ -11,6 +11,12 @@ namespace LittleEmpires.Unity
         private int _width, _depth;
         private float[,] _elevations;
 
+        public void UseAuthoredSurface(Terrain terrain)
+        {
+            Surface = terrain;
+            _width = _depth = 64;
+        }
+
         public void Build(WorldSnapshot snapshot)
         {
             foreach (var tile in snapshot.Terrain)

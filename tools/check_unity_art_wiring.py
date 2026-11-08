@@ -32,7 +32,7 @@ for group in ["Trees", "Bushes", "Rocks", "Grasses", "Flowers"]:
                       match.group(1), re.MULTILINE)
     assert refs, f"No valid references: {group}"
     for file_id, model_guid in refs:
-        assert file_id == "100100000", f"Unexpected FBX prefab root file ID for {group}"
+        assert file_id == "919132149155446097", f"Unexpected FBX prefab root file ID for {group}"
         assert model_guid in models, f"Broken Quaternius {group} model GUID: {model_guid}"
 
 print("PASS: LargeIsland nature catalog and all five Quaternius asset groups are linked.")

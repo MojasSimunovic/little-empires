@@ -49,9 +49,11 @@ public sealed class WorldGameSession
     }
 
     public static WorldGameSession NewStrategicIsland(int seed, int width = 13, int height = 13) =>
+        NewStrategicIsland(IslandGenerator.Generate(seed, width, height));
+
+    public static WorldGameSession NewStrategicIsland(IslandMap island) =>
         new(new GameState(wood: 120, stone: 60, food: 80, coins: 200),
-            new Settlement(population: 8, economyMode: EconomyMode.Strategic),
-            IslandGenerator.Generate(seed, width, height));
+            new Settlement(population: 8, economyMode: EconomyMode.Strategic), island);
 
     public PlacementResult PreviewBuilding(GridPosition position, string buildingId) =>
         BuildingPlacementRules.Evaluate(Island, position, BuildingCatalog.Get(buildingId));

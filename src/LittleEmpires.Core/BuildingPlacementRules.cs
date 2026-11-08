@@ -92,8 +92,7 @@ public static class BuildingPlacementRules
         // A terrain type alone does not guarantee a level physical foundation.
         // The real 64x64 Unity island has slopes at the coast and mountain;
         // reject those plots instead of floating a building from its center height.
-        if (failure == PlacementFailure.None && island.Width == 64 && island.Height == 64 &&
-            LargeIslandGeography.BuildingFootprintRelief(position) >
+        if (failure == PlacementFailure.None && island.BuildingFootprintRelief(position) >
                 LargeIslandGeography.MaximumBuildingRelief)
             return new PlacementResult(PlacementFailure.RequiresLevelSite);
 

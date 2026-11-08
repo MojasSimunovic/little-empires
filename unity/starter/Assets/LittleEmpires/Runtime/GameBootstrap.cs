@@ -9,7 +9,7 @@ namespace LittleEmpires.Unity
     /// First Unity gameplay slice. All commands go to the authoritative
     /// C# WorldGameSession; this MonoBehaviour only handles input and UI.
     /// </summary>
-    public sealed class GameBootstrap : MonoBehaviour
+    public sealed partial class GameBootstrap : MonoBehaviour
     {
         [SerializeField] private int islandSeed = 42;
         [SerializeField] private bool largeIsland;
@@ -119,7 +119,9 @@ namespace LittleEmpires.Unity
 
         private void Start()
         {
-            _session = WorldGameSession.NewStrategicIsland(islandSeed, largeIsland ? 64 : 13, largeIsland ? 64 : 13);
+            _session = authoredTerrain != null
+                ? WorldGameSession.NewStrategicIsland(CreateAuthoredMap())
+                : WorldGameSession.NewStrategicIsland(islandSeed, largeIsland ? 64 : 13, largeIsland ? 64 : 13);
             var snapshot = _session.Snapshot();
             _cachedSnapshot = snapshot;
             var visualRoot = new GameObject("World visuals");
@@ -131,10 +133,16 @@ namespace LittleEmpires.Unity
             if (largeIsland) {
                 _view.LargeTerrain = visualRoot.AddComponent<LargeIslandTerrain>();
                 _view.LargeTerrain.CellSize = cellSize;
-                _view.LargeTerrain.Build(snapshot);
+                if (authoredTerrain != null)
+                    _view.LargeTerrain.UseAuthoredSurface(authoredTerrain);
+                else
+                    _view.LargeTerrain.Build(snapshot);
             }
             _view.Rebuild(snapshot);
-            _view.InitializeNature(snapshot);
+            if (authoredTerrain != null)
+                _view.UseAuthoredDecorations(authoredDecorations);
+            else
+                _view.InitializeNature(snapshot);
             _view.ConfigureCrossingMarkers(_session.Island.RiverCrossings);
 
             var camera = Camera.main;

@@ -119,13 +119,15 @@ namespace LittleEmpires.Unity
 
         private void UpdateNatureVisibility(WorldSnapshot state)
         {
-            if (_natureRoot == null) return;
+            if (_natureRoot == null && _authoredNature.Count == 0) return;
             var occupied = new HashSet<GridPosition>();
             foreach (var building in state.Buildings)
                 if (building.Position.HasValue)
                     occupied.Add(building.Position.Value);
             foreach (var road in state.Roads)
                 occupied.Add(road.Position);
+
+            UpdateAuthoredNature(occupied);
 
             foreach (var entry in _naturePlots)
             {
