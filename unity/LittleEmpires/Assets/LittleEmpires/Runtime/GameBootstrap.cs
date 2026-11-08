@@ -19,6 +19,7 @@ namespace LittleEmpires.Unity
         [SerializeField] private GameObject stoneBridgePrefab;
 
         private WorldGameSession _session;
+        private WorldSnapshot _cachedSnapshot;
         private IslandView _view;
         private Vector2 _menuScroll;
         private Vector2 _inspectorScroll;
@@ -103,7 +104,11 @@ namespace LittleEmpires.Unity
             {
                 var result = _session.BuildRoadPath(_roadPreview.Segments, _roadTool == Tool.StoneRoad);
                 _message = result.Succeeded ? "Road route built: " + result.Segments.Count + " plots." : "Route rejected: " + result.Failure;
-                if (result.Succeeded) _view.UpdateRoads(_session.Snapshot());
+                if (result.Succeeded)
+                {
+                    _cachedSnapshot = _session.Snapshot();
+                    _view.UpdateRoads(_cachedSnapshot);
+                }
             }
             CancelRoad();
         }
@@ -112,6 +117,7 @@ namespace LittleEmpires.Unity
         {
             _session = WorldGameSession.NewStrategicIsland(islandSeed, largeIsland ? 64 : 13, largeIsland ? 64 : 13);
             var snapshot = _session.Snapshot();
+            _cachedSnapshot = snapshot;
             var visualRoot = new GameObject("World visuals");
             _view = visualRoot.AddComponent<IslandView>();
             _view.BuildingPrefabs = buildingPrefabs;
@@ -303,7 +309,8 @@ namespace LittleEmpires.Unity
 
         private void Refresh()
         {
-            _view.Rebuild(_session.Snapshot());
+            _cachedSnapshot = _session.Snapshot();
+            _view.Rebuild(_cachedSnapshot);
             _view.Highlight(_selected);
         }
 
@@ -322,7 +329,8 @@ namespace LittleEmpires.Unity
         {
             if (_session == null) return;
 
-            var snap = _session.Snapshot();
+            var snap = _cachedSnapshot;
+            if (snap == null) return;
             if (_statusStyle == null)
             {
                 _statusStyle = new GUIStyle(GUI.skin.box)
@@ -485,6 +493,7 @@ namespace LittleEmpires.Unity
             {
                 _session.ChangeTaxes(policy);
                 _message = "Taxation set to " + title + ".";
+                _cachedSnapshot = _session.Snapshot();
             }
             GUI.backgroundColor = old;
         }
@@ -492,7 +501,10 @@ namespace LittleEmpires.Unity
         private void ChangePriority(int index, int priority)
         {
             if (_session.ChangeWorkPriority(index, priority))
+            {
                 _message = "Workforce priority changed to " + priority + ".";
+                _cachedSnapshot = _session.Snapshot();
+            }
             else
                 _message = "Priority must be from -10 to 10.";
         }
@@ -514,6 +526,8 @@ namespace LittleEmpires.Unity
             _message = outcome.Succeeded
                 ? direction + " 5 " + resource + " for " + outcome.TotalCoins + " coins."
                 : "Trading failed: " + outcome.Failure;
+            if (outcome.Succeeded)
+                _cachedSnapshot = _session.Snapshot();
         }
     }
 }
