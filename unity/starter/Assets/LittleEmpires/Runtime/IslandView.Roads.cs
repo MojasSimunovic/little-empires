@@ -126,12 +126,15 @@ namespace LittleEmpires.Unity
 
         private Material PreviewMaterial(Color color)
         {
-            if (_previewMaterials.TryGetValue(color,out var material)) return material;
-            material=new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            var tint=color; tint.a=.58f; material.color=tint;
-            material.SetFloat("_Surface",1); material.SetFloat("_SrcBlend",5); material.SetFloat("_DstBlend",10);
-            material.SetFloat("_ZWrite",0); material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); material.renderQueue=3000;
-            _previewMaterials[color]=material; return material;
+            if (_previewMaterials.TryGetValue(color, out var material)) return material;
+            var template = Resources.Load<Material>("Hud/PlacementPreview");
+            if (template == null) return MaterialFor(color);
+
+            var tint = color;
+            tint.a = .58f;
+            material = new Material(template) { color = tint };
+            _previewMaterials[color] = material;
+            return material;
         }
 
         private GameObject Patch(Transform parent, Vector3 position, float width, float depth, Color color)
