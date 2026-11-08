@@ -15,6 +15,7 @@ namespace LittleEmpires.Unity
         [SerializeField] private bool largeIsland;
         [SerializeField] private float cellSize = 6f;
         [SerializeField] private BuildingPrefabRegistry buildingPrefabs;
+        [SerializeField] private NaturePrefabCatalog naturePrefabs;
         [SerializeField] private GameObject woodenBridgePrefab;
         [SerializeField] private GameObject stoneBridgePrefab;
 
@@ -124,6 +125,7 @@ namespace LittleEmpires.Unity
             var visualRoot = new GameObject("World visuals");
             _view = visualRoot.AddComponent<IslandView>();
             _view.BuildingPrefabs = buildingPrefabs;
+            _view.NaturePrefabs = naturePrefabs;
             _view.WoodenBridgePrefab = woodenBridgePrefab;
             _view.StoneBridgePrefab = stoneBridgePrefab;
             if (largeIsland) {
@@ -132,6 +134,7 @@ namespace LittleEmpires.Unity
                 _view.LargeTerrain.Build(snapshot);
             }
             _view.Rebuild(snapshot);
+            _view.InitializeNature(snapshot);
             _view.ConfigureCrossingMarkers(_session.Island.RiverCrossings);
 
             var camera = Camera.main;
