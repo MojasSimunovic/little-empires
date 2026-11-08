@@ -56,7 +56,7 @@ namespace LittleEmpires.Unity.Editor
             EditorUtility.DisplayDialog("Little Empires",
                 "StarterIsland is ready. Press Play!\n\n" +
                 "Build: choose a tool in the left panel and click a tile.\n" +
-                "R: dirt roads, T: stone roads, E: end season.\n" +
+                "R: dirt roads, T: stone roads, Enter: end season.\n" +
                 "Right mouse: orbit; mouse wheel: zoom.\n\n" +
                 "Use Edit > Project Settings > Player > Active Input Handling = Both " +
                 "if Unity reports legacy input errors.",
