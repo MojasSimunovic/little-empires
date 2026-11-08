@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/LittleEmpires/Scenes/StarterIsland.unity
-    guid: bbab12e3886880e499c6dadd364c6f1d
+    path: Assets/LittleEmpires/Scenes/LargeIsland.unity
+    guid: c4b150272f496eb4b82cc415d5a4caa4
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

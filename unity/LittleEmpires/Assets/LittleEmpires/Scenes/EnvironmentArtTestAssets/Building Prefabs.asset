@@ -27,6 +27,8 @@ MonoBehaviour:
     Prefab: {fileID: 8570562653779760041, guid: 99aba2015c8ecde41962060d118bfb21, type: 3}
   - BuildingId: fishery
     Prefab: {fileID: 8538012068006454428, guid: 1c2fa8b78cfe7f94aad1d7818a835f5e, type: 3}
+  - BuildingId: marketplace
+    Prefab: {fileID: 6253638025793326469, guid: 9577488bfe4c3d84ebb2a0455376c5ff, type: 3}
   cottages:
   - {fileID: 3325131485386816289, guid: ae99ddaf78fa45d4d8b80803795f5361, type: 3}
   - {fileID: 5583305845795246860, guid: 3047d763f81ef6247a955946b4d44361, type: 3}
