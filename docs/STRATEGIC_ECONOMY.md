@@ -21,9 +21,11 @@ The optional `IslandMap` parameter on `TurnEngine.EndTurn(state, settlement, isl
 | Farm | 25 wood + 5 stone + 12 coins | 2 | 4 | 3 | +9 food |
 | Cottage | 18 wood + 5 stone + 10 coins | 1 | 0 | 0 | 6 housing slots |
 | Townhouse | Cottage upgrade: 24 wood + 10 stone + 20 coins | 2 (upgrade) | 0 | 0 | 12 housing slots total |
-| **Lumber Mill** | 35 wood + 15 stone + 30 coins | 2 | 2 | 4 | +50% to linked Lumber Camps |
-| **Food Processing Plant** | 40 wood + 20 stone + 40 coins | 3 | 3 | 5 | +25% to linked Farms / Fisheries |
-| **Marketplace** | 25 wood + 10 stone + 20 coins | 2 | 0 | 0 | Buy/sell resources |
+| **Sawmill (Town)** | 35 wood + 15 stone + 30 coins | 2 | 2 | 4 | +50% to linked Lumber Camps |
+| **Food Processing Workshop (Town)** | 40 wood + 20 stone + 40 coins | 3 | 3 | 5 | +25% to linked Farms / Fisheries |
+| **Stoneworks (Town)** | 35 wood + 20 stone + 45 coins | 2 | 2 | 4 | +50% to linked Quarries |
+| **Trading Harbor (Town)** | 45 wood + 30 stone + 100 coins | 3 | 0 | 0 | Shoreline trade with 120-unit seasonal capacity |
+| **Marketplace** | 25 wood + 10 stone + 20 coins | 2 | 0 | 0 | Buy/sell resources, 30-unit seasonal capacity |
 
 Worker demand and upkeep are **provisional**. Market trading is a player action and does not yet require staffed vendors, but the Marketplace must be complete and connected. The settlement’s entire population is eligible for work in this first version; an age/labor-force split is future work.
 
@@ -37,7 +39,7 @@ Worker demand and upkeep are **provisional**. Market trading is a player action 
 
 ## Processing and road connectivity
 
-The Lumber Mill provides **+50% wood** to a Lumber Camp; the Food Processing Plant provides **+25% food** to a Farm/Fishery.
+The Sawmill (existing `lumber-mill` ID) provides **+50% wood** to Lumber Camps; the Food Processing Workshop (existing `food-processor` ID) provides **+25% food** to Farms/Fisheries; Stoneworks provides **+50% stone** to Quarries.
 
 For any bonus:
 - Both producer and processor must be **complete and operational**.
@@ -72,6 +74,7 @@ A Marketplace is only usable when its construction is **complete** and it has a 
 
 - `MarketplaceTrading.Execute(state, settlement, island, marketplaceIndex, direction, resource, units)` uses explicit success/failure results.
 - One Marketplace handles at most **30 total units per season** (combined buys and sells), reset during `EndTurn`.
+- One Trading Harbor handles **120 total units per season**, resets on `EndTurn`, uses the same goods/prices and road-to-residence requirement, and must be constructed on shoreline after reaching Town tier. No distant island or ship simulation is needed.
 - An attempt to sell requires enough stock; buying requires enough coins. Invalid quantities, unsupported resources, incomplete/disconnected markets, capacity violations and arithmetic overflow are **rejected without any changes** to inventory or quotas.
 - Spread prevents profitable immediate buy→sell loops.
 - Prices and seasonal capacity are fixed for now. World supply/demand, import tariffs, trade routes, shipping, market stalls and regional prices come later.
