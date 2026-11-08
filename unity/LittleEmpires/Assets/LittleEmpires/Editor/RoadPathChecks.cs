@@ -30,6 +30,19 @@ public static class RoadPathChecks
         check(!map.Roads.BuildPath(state,zFirst,true).Succeeded && state.Get(Resource.Stone)==0 && map.Roads.Segments.Count==count && map.Roads.Segments[new GridPosition(1,2)]==RoadSurface.Dirt,"insufficient stone atomicity");
         check(map.Roads.AreConnected(new GridPosition(1,1),new GridPosition(5,3)),"four-way connectivity");
         check(map.Roads.BuildPath(state,new[]{new GridPosition(6,6)}).Succeeded,"single click");
+        // River classification and visual centerline must agree on one narrow playable stream.
+        check(!IslandRiver.IsRiverCell(43,7) && !IslandRiver.IsRiverCell(43,8),
+            "river stops at bay instead of blocking dry southern plots");
+        var oneRiverColumnPerRow = true;
+        var centerlinesAligned = true;
+        for (var row = IslandRiver.MouthZ; row <= IslandRiver.SourceZ; row++)
+        {
+            var riverTiles = Enumerable.Range(0, 64).Where(x => IslandRiver.IsRiverCell(x, row)).ToArray();
+            oneRiverColumnPerRow &= riverTiles.Length == 1 && riverTiles[0] == IslandRiver.RiverColumn(row);
+            centerlinesAligned &= Math.Abs(IslandRiver.VisualCenterX(row) - IslandRiver.RiverColumn(row)) < 0.00001;
+        }
+        check(oneRiverColumnPerRow && centerlinesAligned,
+            "narrow river gameplay mask follows the drawn centerline");
         var session=WorldGameSession.NewStrategicIsland(42,64,64);
         var crossing=new GridPosition(44,28);
         var bridgePath=RoadPaths.Between(new GridPosition(42,28),new GridPosition(46,28));
