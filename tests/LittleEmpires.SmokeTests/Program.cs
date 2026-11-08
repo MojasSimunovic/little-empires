@@ -774,6 +774,7 @@ Check(diagonalIsland.Roads.PlaceDirt(new GridPosition(0, 1)).Succeeded &&
     "Orthogonal connector closes a diagonal gap");
 
 StrategicEconomyTests.Run(Check);
+LargeIslandFoundationChecks.Run(Check);
 
 Console.WriteLine("All smoke tests passed.");
 Console.WriteLine(RoadPathChecks.Run());

@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b6576bc21214871a61bfc1bc22d1901, type: 3}
+  m_Name: Island Nature Prefabs
+  m_EditorClassIdentifier: LittleEmpires.Unity::LittleEmpires.Unity.NaturePrefabCatalog
+  Trees:
+  - {fileID: 100100000, guid: 401ff945e323456409453ef824da594a, type: 3}
+  - {fileID: 100100000, guid: b1ce35b6044afc64bbc86bb434498b64, type: 3}
+  - {fileID: 100100000, guid: 5a4d6a5a034486c4980c10f623843fc1, type: 3}
+  - {fileID: 100100000, guid: 6c7c4af7ba49c4844a2edc25ccbc7cf3, type: 3}
+  - {fileID: 100100000, guid: 86b17f5001cba58469fa496e0b0ed9ad, type: 3}
+  Bushes:
+  - {fileID: 100100000, guid: 44aa0f9e8eed9ef4090481ca2e587184, type: 3}
+  - {fileID: 100100000, guid: 51ac613935bb0f44ca3a8347789749ad, type: 3}
+  Rocks:
+  - {fileID: 100100000, guid: fd6613082a01b6e48b333dd22aeede0a, type: 3}
+  - {fileID: 100100000, guid: 24e3c5f5a1234d040912f4d851a44567, type: 3}
+  Grasses:
+  - {fileID: 100100000, guid: e47d94367b5eab7418152104422314bb, type: 3}
+  - {fileID: 100100000, guid: f9bd375d865f62b4ba2a80deccf12e1d, type: 3}
+  Flowers:
+  - {fileID: 100100000, guid: f6f26e23091a7934080f2dc37225b55a, type: 3}
+  - {fileID: 100100000, guid: 91f90d13a3a118d468fc5f74b3ae87c8, type: 3}

@@ -40,23 +40,19 @@ namespace LittleEmpires.Unity
                 for (var x = 0; x < 513; x++)
                     heights[z, x] = Height(x / 512f * _width - .5f, z / 512f * _depth - .5f) / 80;
             data.SetHeights(0, 0, heights);
-            var colors = new[] { new Color(.40f,.56f,.28f), new Color(.80f,.70f,.48f),
-                new Color(.48f,.47f,.42f), new Color(.30f,.44f,.25f), new Color(.61f,.62f,.30f) };
+            // Keep material palette cohesive with the warm plaster/terracotta housing.
+            // Procedural layer detail is more varied than the old five flat-color tiles,
+            // while the authored coast, city grade and cliff masks remain unchanged.
+            var colors = new[] { new Color(.42f,.57f,.30f), new Color(.80f,.71f,.51f),
+                new Color(.53f,.52f,.47f), new Color(.33f,.46f,.28f), new Color(.65f,.64f,.39f) };
             var layers = new TerrainLayer[colors.Length];
             for (var i = 0; i < layers.Length; i++)
-            {
-                var texture = new Texture2D(128, 128);
-                for (var z = 0; z < 128; z++)
-                    for (var x = 0; x < 128; x++)
-                    {
-                        var broad = Mathf.PerlinNoise(x * .055f + i * 7, z * .055f);
-                        var grain = Mathf.PerlinNoise(x * .31f, z * .31f + i * 9);
-                        texture.SetPixel(x, z, colors[i] *
-                            Mathf.Lerp(.81f, 1.17f, broad * .7f + grain * .3f));
-                    }
-                texture.Apply();
-                layers[i] = new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(14,14) };
-            }
+                layers[i] = new TerrainLayer
+                {
+                    diffuseTexture = CreateGroundTexture(i, colors[i]),
+                    tileSize = new Vector2(i == 1 ? 19f : i == 2 ? 12f : 16f,
+                        i == 1 ? 19f : i == 2 ? 12f : 16f)
+                };
             data.terrainLayers = layers;
             var weights = new float[256,256,5];
             for (var z = 0; z < 256; z++) for (var x = 0; x < 256; x++)
@@ -102,6 +98,44 @@ namespace LittleEmpires.Unity
             water.SetFloat("_Smoothness",.65f);
             ocean.GetComponent<Renderer>().sharedMaterial = water;
             if (_width == 64 && _depth == 64) BuildRiver();
+        }
+
+        // Built only at terrain creation, never during season updates.
+        // Three spatial frequencies prevent large repeated solid-color blocks,
+        // with finer grain for sand/stone and soft flecks in grass/forest.
+        private static Texture2D CreateGroundTexture(int layer, Color baseColor)
+        {
+            const int size = 192;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                wrapMode = TextureWrapMode.Repeat,
+                filterMode = FilterMode.Bilinear,
+                anisoLevel = 4
+            };
+            for (var y = 0; y < size; y++)
+                for (var x = 0; x < size; x++)
+                {
+                    var broad = Mathf.PerlinNoise(x * .033f + layer * 17.3f,
+                        y * .033f + layer * 12.7f);
+                    var mid = Mathf.PerlinNoise(x * .13f + layer * 7.1f,
+                        y * .13f + layer * 21.4f);
+                    var grain = Mathf.PerlinNoise(x * .65f + layer * 43.3f,
+                        y * .65f + layer * 31.6f);
+                    var shade = .78f + broad * .27f + mid * .19f + grain * .10f;
+
+                    // Light sand ripples, fine rock flecks, and green grass speckle.
+                    if (layer == 1) shade += .045f *
+                        Mathf.Sin(x * .21f + Mathf.Sin(y * .075f) * 1.5f);
+                    if (layer == 2 && grain > .77f) shade += .19f;
+                    if ((layer == 0 || layer == 3 || layer == 4) && grain > .78f)
+                        shade += .08f;
+
+                    var pixel = baseColor * shade;
+                    pixel.a = 1f;
+                    texture.SetPixel(x, y, pixel);
+                }
+            texture.Apply(false, true);
+            return texture;
         }
 
         private TerrainKind Kind(int x, int z) => _kinds[Mathf.Clamp(x,0,_width-1),Mathf.Clamp(z,0,_depth-1)];
