@@ -12,7 +12,7 @@ public sealed record BuildingView(
     int Index, string Id, string Name, GridPosition? Position,
     bool IsComplete, int SeasonsRemaining, bool IsUpgrading,
     int UpgradeSeasonsRemaining, int HousingCapacity,
-    int WorkersRequired, int WorkPriority);
+    int WorkersRequired, int WorkPriority, int UnitsTradedThisSeason);
 
 public sealed record RoadView(GridPosition Position, RoadSurface Surface, BridgeAxis Bridge = BridgeAxis.None);
 
@@ -112,7 +112,8 @@ public sealed class WorldGameSession
                     building.Position, building.IsComplete, building.SeasonsRemaining,
                     building.IsUpgrading, building.UpgradeSeasonsRemaining,
                     building.Definition.HousingCapacity,
-                    building.Definition.WorkersRequired, building.WorkPriority))
+                    building.Definition.WorkersRequired, building.WorkPriority,
+                    building.UnitsTradedThisSeason))
                 .ToArray()),
             Array.AsReadOnly(Island.Roads.Segments
                 .Select(entry => new RoadView(entry.Key, entry.Value,

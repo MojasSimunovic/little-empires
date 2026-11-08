@@ -326,8 +326,22 @@ namespace LittleEmpires.Unity
                     break;
                 case BuildingCatalog.FoodProcessorId:
                     House(root, false, .8f);
-                    Cube(root, "Factory chimney", new Vector3(.23f, 1.17f, -.19f),
+                    Cube(root, "Smokehouse chimney", new Vector3(.23f, 1.17f, -.19f),
                         new Vector3(.16f, .6f, .16f), new Color(.65f, .54f, .46f), false);
+                    break;
+                case BuildingCatalog.StoneworksId:
+                    House(root, false, .63f);
+                    Cube(root, "Stoneworking slab", new Vector3(-.27f, .28f, -.34f),
+                        new Vector3(.26f, .16f, .2f), new Color(.7f, .7f, .65f), false);
+                    Cube(root, "Stone block stack", new Vector3(.28f, .28f, -.34f),
+                        new Vector3(.24f, .22f, .22f), new Color(.67f, .66f, .63f), false);
+                    break;
+                case BuildingCatalog.TradingHarborId:
+                    Market(root);
+                    Cube(root, "Harbor wharf", new Vector3(0, .235f, -.35f),
+                        new Vector3(.87f, .13f, .25f), new Color(.47f, .32f, .22f), false);
+                    Cube(root, "Trade crates", new Vector3(-.27f, .42f, -.18f),
+                        new Vector3(.24f, .25f, .23f), new Color(.56f, .42f, .26f), false);
                     break;
                 case BuildingCatalog.MarketplaceId:
                     Market(root);
