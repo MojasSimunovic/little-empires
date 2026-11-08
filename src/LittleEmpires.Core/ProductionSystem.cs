@@ -20,6 +20,7 @@ public static class ProductionSystem
     public const int BoostRadius = 6;
     public const int LumberMillBonusPercent = 50;
     public const int FoodProcessorBonusPercent = 25;
+    public const int StoneworksBonusPercent = 50;
 
     public static ProductionReport Resolve(
         GameState state, Settlement settlement, IslandMap? island,
@@ -80,6 +81,7 @@ public static class ProductionSystem
             (BuildingCatalog.LumberCampId, Resource.Wood) => BuildingCatalog.LumberMillId,
             (BuildingCatalog.FarmId, Resource.Food) => BuildingCatalog.FoodProcessorId,
             (BuildingCatalog.FisheryId, Resource.Food) => BuildingCatalog.FoodProcessorId,
+            (BuildingCatalog.QuarryId, Resource.Stone) => BuildingCatalog.StoneworksId,
             _ => null
         };
         if (requiredProcessor is null) return 0;
@@ -100,8 +102,13 @@ public static class ProductionSystem
             if (!island.Roads.AreBuildingsConnected(a, b))
                 continue;
 
-            return requiredProcessor == BuildingCatalog.LumberMillId
-                ? LumberMillBonusPercent : FoodProcessorBonusPercent;
+            return requiredProcessor switch
+            {
+                BuildingCatalog.LumberMillId => LumberMillBonusPercent,
+                BuildingCatalog.FoodProcessorId => FoodProcessorBonusPercent,
+                BuildingCatalog.StoneworksId => StoneworksBonusPercent,
+                _ => 0
+            };
         }
 
         return 0;

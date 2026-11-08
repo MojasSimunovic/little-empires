@@ -214,14 +214,19 @@ namespace LittleEmpires.Unity
         private void SyncBuildings(WorldSnapshot state)
         {
             var seen = new HashSet<int>();
+            var housingCount = 0;
             foreach (var building in state.Buildings)
             {
+                // Snapshots retain settlement order, including the same entry after an upgrade.
+                var isHousing = building.Id == BuildingCatalog.CottageId ||
+                    building.Id == BuildingCatalog.TownhouseId;
+                var variant = isHousing ? housingCount++ % BuildingPrefabRegistry.HousingVariantCount : 0;
                 if (!building.Position.HasValue) continue;
                 seen.Add(building.Index);
                 var p = building.Position.Value;
                 // These fields, not season/year or worker priority, determine the mesh.
                 var signature = building.Id + "|" + p.X + "," + p.Z + "|" +
-                    building.IsComplete + "|" + building.IsUpgrading;
+                    building.IsComplete + "|" + building.IsUpgrading + "|" + variant;
                 if (_buildingSignatures.TryGetValue(building.Index, out var previous) &&
                     previous == signature && _buildingObjects.TryGetValue(building.Index, out var existing) &&
                     existing != null)
@@ -232,7 +237,7 @@ namespace LittleEmpires.Unity
                     old.SetActive(false);
                     Destroy(old);
                 }
-                _buildingObjects[building.Index] = DrawBuilding(building);
+                _buildingObjects[building.Index] = DrawBuilding(building, variant);
                 _buildingSignatures[building.Index] = signature;
             }
 
@@ -247,7 +252,7 @@ namespace LittleEmpires.Unity
             }
         }
 
-        private GameObject DrawBuilding(BuildingView building)
+        private GameObject DrawBuilding(BuildingView building, int variant)
         {
             var center = WorldPosition(building.Position.Value);
             var home = new GameObject(building.Name + " #" + building.Index);
@@ -267,7 +272,7 @@ namespace LittleEmpires.Unity
                 return home;
             }
 
-            var prefab = BuildingPrefabs != null ? BuildingPrefabs.Find(building.Id) : null;
+            var prefab = BuildingPrefabs != null ? BuildingPrefabs.Find(building.Id, variant) : null;
             if (prefab != null)
             {
                 // The cottage's 5.84 x 5.56 unit footprint fits one large-island plot.
@@ -321,8 +326,22 @@ namespace LittleEmpires.Unity
                     break;
                 case BuildingCatalog.FoodProcessorId:
                     House(root, false, .8f);
-                    Cube(root, "Factory chimney", new Vector3(.23f, 1.17f, -.19f),
+                    Cube(root, "Smokehouse chimney", new Vector3(.23f, 1.17f, -.19f),
                         new Vector3(.16f, .6f, .16f), new Color(.65f, .54f, .46f), false);
+                    break;
+                case BuildingCatalog.StoneworksId:
+                    House(root, false, .63f);
+                    Cube(root, "Stoneworking slab", new Vector3(-.27f, .28f, -.34f),
+                        new Vector3(.26f, .16f, .2f), new Color(.7f, .7f, .65f), false);
+                    Cube(root, "Stone block stack", new Vector3(.28f, .28f, -.34f),
+                        new Vector3(.24f, .22f, .22f), new Color(.67f, .66f, .63f), false);
+                    break;
+                case BuildingCatalog.TradingHarborId:
+                    Market(root);
+                    Cube(root, "Harbor wharf", new Vector3(0, .235f, -.35f),
+                        new Vector3(.87f, .13f, .25f), new Color(.47f, .32f, .22f), false);
+                    Cube(root, "Trade crates", new Vector3(-.27f, .42f, -.18f),
+                        new Vector3(.24f, .25f, .23f), new Color(.56f, .42f, .26f), false);
                     break;
                 case BuildingCatalog.MarketplaceId:
                     Market(root);

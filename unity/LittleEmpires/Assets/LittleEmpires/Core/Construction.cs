@@ -5,6 +5,9 @@ using System.Linq;
 namespace LittleEmpires.Core
 {
 
+/// <summary>Expansion tiers. Future tiers add an enum member and unlock rule.</summary>
+public enum SettlementTier { Village = 1, Town = 2 }
+
 public sealed record BuildingDefinition(
     string Id,
     string Name,
@@ -15,7 +18,8 @@ public sealed record BuildingDefinition(
     bool CanBuildDirectly = true,
     PlacementRequirement SiteRequirement = PlacementRequirement.FlatLand,
     int WorkersRequired = 0,
-    int UpkeepCoinsPerSeason = 0)
+    int UpkeepCoinsPerSeason = 0,
+    SettlementTier RequiredTier = SettlementTier.Village)
 {
     public void Validate()
     {
@@ -25,6 +29,7 @@ public sealed record BuildingDefinition(
         if (WorkersRequired < 0) throw new ArgumentOutOfRangeException(nameof(WorkersRequired));
         if (UpkeepCoinsPerSeason < 0) throw new ArgumentOutOfRangeException(nameof(UpkeepCoinsPerSeason));
         if (!Enum.IsDefined(typeof(PlacementRequirement), SiteRequirement)) throw new ArgumentOutOfRangeException(nameof(SiteRequirement));
+        if (!Enum.IsDefined(typeof(SettlementTier), RequiredTier)) throw new ArgumentOutOfRangeException(nameof(RequiredTier));
         if (Cost.Values.Any(v => v < 0) || ProductionPerSeason.Values.Any(v => v < 0))
             throw new ArgumentException("Building amounts cannot be negative.");
     }
@@ -92,12 +97,34 @@ public sealed class Settlement
     public EconomyMode EconomyMode { get; }
     public TaxPolicy TaxPolicy { get; private set; } = LittleEmpires.Core.TaxPolicy.Normal;
 
+    // A completed Town Hall, not population alone, grants Town privileges.
+    // Progression stays unlocked if population later declines.
+    public SettlementTier Tier => _buildings.Any(building =>
+        building.IsComplete && building.Definition.Id == BuildingCatalog.TownHallId)
+        ? SettlementTier.Town : SettlementTier.Village;
+
+    public bool IsBuildingUnlocked(BuildingDefinition definition) =>
+        definition != null &&
+        (EconomyMode == EconomyMode.Classic || Tier >= definition.RequiredTier);
+
+    public bool CanStartBuilding(BuildingDefinition definition) =>
+        definition != null && definition.CanBuildDirectly &&
+        IsBuildingUnlocked(definition) && !WouldDuplicateCivicHall(definition);
+
     // The founding residents already have homes, but no spare housing.
     public int StartingHousingCapacity { get; }
     public int HousingCapacity => checked(StartingHousingCapacity +
         _buildings.Where(building => building.IsComplete)
             .Sum(building => building.Definition.HousingCapacity));
     public int AvailableHousing => Math.Max(0, HousingCapacity - Population);
+
+    private bool HasCivicHall => _buildings.Any(building =>
+        building.Definition.Id == BuildingCatalog.VillageHallId ||
+        building.Definition.Id == BuildingCatalog.TownHallId);
+
+    private bool WouldDuplicateCivicHall(BuildingDefinition definition) =>
+        (definition.Id == BuildingCatalog.VillageHallId ||
+         definition.Id == BuildingCatalog.TownHallId) && HasCivicHall;
 
     public Settlement(int population = 0, int happiness = 70,
         EconomyMode economyMode = EconomyMode.Classic)
@@ -166,6 +193,8 @@ public sealed class Settlement
 
         var definition = BuildingCatalog.Get(buildingId);
         definition.Validate();
+        if (!CanStartBuilding(definition))
+            return false;
         if (!BuildingPlacementRules.Evaluate(island, position, definition).Allowed)
             return false;
         if (!state.TrySpend(definition.Cost))
@@ -188,13 +217,14 @@ public sealed class Settlement
         if (state == null) throw new ArgumentNullException(nameof(state));
         if (definition == null) throw new ArgumentNullException(nameof(definition));
         definition.Validate();
-        if (!definition.CanBuildDirectly || !state.TrySpend(definition.Cost)) return false;
+        if (!CanStartBuilding(definition) || !state.TrySpend(definition.Cost))
+            return false;
         _buildings.Add(new Building(definition));
         return true;
     }
 
     /// <summary>
-    /// Upgrade a completed housing building by its index in Buildings.
+    /// Upgrade a completed building by its index in Buildings.
     /// Indices remain stable until building removal is introduced.
     /// </summary>
     public bool TryStartUpgrade(GameState state, int buildingIndex)
@@ -204,10 +234,13 @@ public sealed class Settlement
 
         var building = _buildings[buildingIndex];
         if (!building.IsComplete || building.IsUpgrading ||
-            !HousingUpgradeCatalog.TryGet(building.Definition.Id, out var upgrade))
+            !BuildingUpgradeCatalog.TryGet(building.Definition.Id, out var upgrade))
             return false;
 
         upgrade!.Validate();
+        // Classic preserves the legacy simulator fixtures; gameplay is Strategic.
+        if (EconomyMode == EconomyMode.Strategic &&
+            Population < upgrade.MinimumPopulation) return false;
         if (!state.TrySpend(upgrade.Cost)) return false;
         building.StartUpgrade(upgrade);
         return true;

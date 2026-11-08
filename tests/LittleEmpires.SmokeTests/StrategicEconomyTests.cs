@@ -136,8 +136,21 @@ public static class StrategicEconomyTests
 
         // A connected processor cannot boost output without employees and upkeep.
         var laborMap = World();
-        var laborState = new GameState(wood: 200, stone: 100, food: 100, coins: 200);
-        var laborTown = new Settlement(population: 3, economyMode: EconomyMode.Strategic);
+        var laborState = new GameState(wood: 300, stone: 100, food: 500, coins: 1000);
+        var laborTown = new Settlement(population: 50, happiness: 0,
+            economyMode: EconomyMode.Strategic);
+        // The processor test starts from an already-unlocked Town, then reduces
+        // residents to 3 to exercise the existing understaffed workforce case.
+        check(laborTown.TryStartConstruction(laborState, BuildingCatalog.VillageHallId),
+            "Processor staffing fixture starts its Village Hall");
+        engine.EndTurn(laborState, laborTown);
+        check(laborTown.TryStartUpgrade(laborState, 0),
+            "Processor staffing fixture begins Town Hall upgrade");
+        engine.EndTurn(laborState, laborTown);
+        engine.EndTurn(laborState, laborTown);
+        check(laborTown.Tier == SettlementTier.Town,
+            "Processor fixture gains Town tier after Hall upgrade");
+        laborTown.SetPopulation(3);
         check(laborTown.TryStartConstruction(laborState, laborMap,
                   new GridPosition(1, 2), BuildingCatalog.LumberCampId) &&
               laborTown.TryStartConstruction(laborState, laborMap,
@@ -150,8 +163,8 @@ public static class StrategicEconomyTests
         check(campPriority.GrossProduction[Resource.Wood] == 6 &&
               campPriority.WorkingResidents == 3,
             "Mill without workers cannot boost fully staffed camp");
-        check(laborTown.SetWorkPriority(1, 10),
-            "Mill can be assigned priority over Lumber Camp");
+        check(laborTown.SetWorkPriority(2, 10),
+            "Sawmill can be assigned priority over Lumber Camp");
         var millPriority = engine.EndTurn(laborState, laborTown, laborMap);
         check(millPriority.GrossProduction[Resource.Wood] == 3 &&
               millPriority.WorkingResidents == 3,
