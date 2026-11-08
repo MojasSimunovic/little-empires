@@ -16,6 +16,9 @@ namespace LittleEmpires.Unity
         private readonly HashSet<string> _missingPrefabs = new HashSet<string>();
         public LargeIslandTerrain LargeTerrain;
         public BuildingPrefabRegistry BuildingPrefabs;
+        public NaturePrefabCatalog NaturePrefabs;
+        private readonly Dictionary<int, GameObject> _buildingObjects = new Dictionary<int, GameObject>();
+        private readonly Dictionary<int, string> _buildingSignatures = new Dictionary<int, string>();
         private Transform _contentRoot;
         private GameObject _selection;
         private float _offsetX;
@@ -30,6 +33,19 @@ namespace LittleEmpires.Unity
 
         public void Rebuild(WorldSnapshot state)
         {
+            // LargeIsland's terrain, selection marker and completed houses persist.
+            // Only buildings whose visible state actually changed are recreated.
+            if (LargeTerrain != null && _contentRoot != null)
+            {
+                UpdateRoads(state);
+                SyncBuildings(state);
+                UpdateNatureVisibility(state);
+                return;
+            }
+
+            _buildingObjects.Clear();
+            _buildingSignatures.Clear();
+            _selection = null;
             if (_contentRoot != null)
             {
                 // Remove the old scene graph on each season/command.
@@ -84,11 +100,7 @@ namespace LittleEmpires.Unity
             }
             UpdateRoads(state);
 
-            foreach (var building in state.Buildings)
-            {
-                if (building.Position.HasValue)
-                    DrawBuilding(building);
-            }
+            SyncBuildings(state);
 
             _selection = new GameObject("Selected plot");
             _selection.transform.SetParent(_contentRoot, false);
@@ -199,7 +211,43 @@ namespace LittleEmpires.Unity
                 false);
         }
 
-        private void DrawBuilding(BuildingView building)
+        private void SyncBuildings(WorldSnapshot state)
+        {
+            var seen = new HashSet<int>();
+            foreach (var building in state.Buildings)
+            {
+                if (!building.Position.HasValue) continue;
+                seen.Add(building.Index);
+                var p = building.Position.Value;
+                // These fields, not season/year or worker priority, determine the mesh.
+                var signature = building.Id + "|" + p.X + "," + p.Z + "|" +
+                    building.IsComplete + "|" + building.IsUpgrading;
+                if (_buildingSignatures.TryGetValue(building.Index, out var previous) &&
+                    previous == signature && _buildingObjects.TryGetValue(building.Index, out var existing) &&
+                    existing != null)
+                    continue;
+
+                if (_buildingObjects.TryGetValue(building.Index, out var old) && old != null)
+                {
+                    old.SetActive(false);
+                    Destroy(old);
+                }
+                _buildingObjects[building.Index] = DrawBuilding(building);
+                _buildingSignatures[building.Index] = signature;
+            }
+
+            var missing = new List<int>();
+            foreach (var key in _buildingObjects.Keys)
+                if (!seen.Contains(key)) missing.Add(key);
+            foreach (var key in missing)
+            {
+                if (_buildingObjects[key] != null) Destroy(_buildingObjects[key]);
+                _buildingObjects.Remove(key);
+                _buildingSignatures.Remove(key);
+            }
+        }
+
+        private GameObject DrawBuilding(BuildingView building)
         {
             var center = WorldPosition(building.Position.Value);
             var home = new GameObject(building.Name + " #" + building.Index);
@@ -216,7 +264,7 @@ namespace LittleEmpires.Unity
                 for (var i = -1; i <= 1; i += 2)
                     Cube(root, "Scaffolding", new Vector3(i * .34f, .52f, .36f),
                         new Vector3(.06f, .85f, .06f), new Color(.48f, .31f, .18f), false);
-                return;
+                return home;
             }
 
             var prefab = BuildingPrefabs != null ? BuildingPrefabs.Find(building.Id) : null;
@@ -231,7 +279,7 @@ namespace LittleEmpires.Unity
                 visual.transform.localScale = Vector3.one / root.localScale.x;
                 foreach (var collider in visual.GetComponentsInChildren<Collider>())
                     collider.enabled = false;
-                return;
+                return home;
             }
             if (BuildingPrefabs != null && _missingPrefabs.Add(building.Id))
                 Debug.LogWarning("No building prefab registered for " + building.Id + "; using procedural visuals.");
@@ -283,6 +331,7 @@ namespace LittleEmpires.Unity
                     House(root, false);
                     break;
             }
+            return home;
         }
 
         private void House(Transform root, bool tall, float size = .8f)
