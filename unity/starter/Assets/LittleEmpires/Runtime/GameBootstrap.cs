@@ -86,7 +86,9 @@ namespace LittleEmpires.Unity
             _roadPreview = _session.PreviewRoadPath(RoadPaths.Between(_roadStart.Value, end, _xFirst), _roadTool == Tool.StoneRoad);
             _view.ShowRoadPreview(_roadPreview, _session.Island.Roads, _roadTool == Tool.StoneRoad);
             _message = _roadPreview.Segments.Count + " plots | " + _roadPreview.CostWood + " wood / " + _roadPreview.CostStone +
-                " stone | Tab: switch corner | " + (_roadPreview.Succeeded ? "Release to build" : _roadPreview.Failure.ToString());
+                " stone | Tab: switch corner | " + (_roadPreview.Succeeded ? "Release to build" :
+                    _roadPreview.Failure == RoadFailure.InvalidCrossing ? "Bridge only at marked crossings" :
+                    _roadPreview.Failure.ToString());
         }
 
         public void ToggleRoadCorner()
@@ -103,7 +105,8 @@ namespace LittleEmpires.Unity
             if (commit && _roadPreview != null)
             {
                 var result = _session.BuildRoadPath(_roadPreview.Segments, _roadTool == Tool.StoneRoad);
-                _message = result.Succeeded ? "Road route built: " + result.Segments.Count + " plots." : "Route rejected: " + result.Failure;
+                _message = result.Succeeded ? "Road route built: " + result.Segments.Count + " plots." : "Route rejected: " + (result.Failure == RoadFailure.InvalidCrossing
+                    ? "Bridges are only allowed at the marked crossings." : result.Failure.ToString());
                 if (result.Succeeded)
                 {
                     _cachedSnapshot = _session.Snapshot();
@@ -129,6 +132,7 @@ namespace LittleEmpires.Unity
                 _view.LargeTerrain.Build(snapshot);
             }
             _view.Rebuild(snapshot);
+            _view.ConfigureCrossingMarkers(_session.Island.RiverCrossings);
 
             var camera = Camera.main;
             if (camera == null)
@@ -176,6 +180,7 @@ namespace LittleEmpires.Unity
             if (_roadStart.HasValue && (_tool != _roadTool || Input.GetMouseButtonDown(1))) { CancelRoad(); return; }
             if (_roadStart.HasValue && Input.GetKeyDown(KeyCode.Tab)) ToggleRoadCorner();
             var roadTool = _tool == Tool.DirtRoad || _tool == Tool.StoneRoad;
+            _view.SetCrossingMarkersHighlighted(roadTool);
             GridPosition picked = default;
             var hasPlot = !MouseInsideHud() && TryPick(out picked);
             // Definite assignment when the pointer is over UI.
