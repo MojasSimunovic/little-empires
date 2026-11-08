@@ -60,14 +60,15 @@ public static class LargeIslandGeography
     // Locations are gameplay coordinates, not Unity world coordinates.
     private static readonly GridPosition[] FisheryShelves =
     {
-        new GridPosition(46, 2), new GridPosition(21, 7),
-        new GridPosition(54, 6), new GridPosition(26, 14),
-        new GridPosition(30, 18), new GridPosition(38, 18),
-        new GridPosition(4, 24), new GridPosition(3, 41),
-        new GridPosition(3, 45), new GridPosition(61, 15),
-        new GridPosition(61, 31), new GridPosition(61, 43),
-        new GridPosition(61, 51), new GridPosition(10, 58),
-        new GridPosition(15, 61)
+        new GridPosition(47, 2), new GridPosition(18, 7),
+        new GridPosition(44, 9), new GridPosition(26, 14),
+        new GridPosition(30, 18), new GridPosition(3, 14),
+        new GridPosition(4, 25), new GridPosition(7, 36),
+        new GridPosition(3, 41), new GridPosition(3, 45),
+        new GridPosition(61, 15), new GridPosition(60, 28),
+        new GridPosition(61, 32), new GridPosition(61, 43),
+        new GridPosition(61, 49), new GridPosition(13, 60),
+        new GridPosition(16, 61)
     };
 
     // Mountain-foot ledges remain Mountain tiles for quarry placement, with
@@ -109,7 +110,8 @@ public static class LargeIslandGeography
             if (influence > 0)
                 elevation = Lerp(elevation, TownElevation, influence);
         }
-        return elevation;
+        // Do not turn ocean cells into dry land near a level shoreline pad.
+        return shape <= 4 ? Math.Min(shape, elevation) : elevation;
     }
 
     // Samples the exact height geometry Unity renders, including river carving.
