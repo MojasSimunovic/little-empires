@@ -43,6 +43,8 @@ namespace LittleEmpires.Unity
             Quarry,
             LumberMill,
             FoodProcessor,
+            Stoneworks,
+            TradingHarbor,
             Marketplace,
             DirtRoad,
             StoneRoad,
@@ -299,7 +301,7 @@ namespace LittleEmpires.Unity
                         _session.UpgradeBuilding(_selectedBuilding);
                     _message = upgraded
                         ? "Cottage upgrade started."
-                        : "Select a completed Cottage with affordable upgrade costs.";
+                        : "Requires a completed Cottage, 20 residents and upgrade materials.";
                     if (upgraded) Refresh();
                     return;
             }
@@ -310,9 +312,16 @@ namespace LittleEmpires.Unity
             var preview = _session.PreviewBuilding(position, buildingId);
             if (!preview.Allowed)
             {
-                _message = preview.Failure == PlacementFailure.RequiresLevelSite
-                    ? "This plot is too steep for a building. Choose a level shelf or terrace."
-                    : "Cannot build here: " + preview.Failure;
+                _message = preview.Failure switch
+                {
+                    PlacementFailure.RequiresLevelSite =>
+                        "This plot is too steep for a building. Choose a level shelf or terrace.",
+                    PlacementFailure.RequiresSettlementTier =>
+                        "Requires a completed Town Hall to unlock this building.",
+                    PlacementFailure.CivicHallAlreadyBuilt =>
+                        "Only one Village Hall or Town Hall is allowed.",
+                    _ => "Cannot build here: " + preview.Failure
+                };
                 return;
             }
 
@@ -344,6 +353,8 @@ namespace LittleEmpires.Unity
                 case Tool.Quarry: return BuildingCatalog.QuarryId;
                 case Tool.LumberMill: return BuildingCatalog.LumberMillId;
                 case Tool.FoodProcessor: return BuildingCatalog.FoodProcessorId;
+                case Tool.Stoneworks: return BuildingCatalog.StoneworksId;
+                case Tool.TradingHarbor: return BuildingCatalog.TradingHarborId;
                 case Tool.Marketplace: return BuildingCatalog.MarketplaceId;
                 default: return null;
             }
@@ -402,7 +413,8 @@ namespace LittleEmpires.Unity
                 "    Food " + ResourceAmount(snap, Resource.Food) +
                 "    Coins " + ResourceAmount(snap, Resource.Coins) +
                 "    |    Residents " + snap.Population + "/" + snap.HousingCapacity +
-                "    Happiness " + snap.Happiness, _headerStyle);
+                "    Happiness " + snap.Happiness +
+                "    Tier: " + snap.Tier, _headerStyle);
             GUILayout.EndArea();
 
             GUILayout.BeginArea(new Rect(8, HeaderHeight + 8, DockWidth - 16,
@@ -439,24 +451,34 @@ namespace LittleEmpires.Unity
 
         private void DrawBuildTools()
         {
-            GUILayout.Label("BUILDINGS");
-            ToolButton(Tool.VillageHall, "Village Hall (one per settlement)");
+            var snap = _cachedSnapshot;
+            var isTown = snap.Tier >= SettlementTier.Town;
+            var hallExists = snap.Buildings.Any(building => IsCivicHall(building.Id));
+            GUILayout.Label("SETTLEMENT: " + snap.Tier.ToString().ToUpperInvariant());
+            GUILayout.Label("VILLAGE BUILDINGS");
+            ToolButton(Tool.VillageHall, "Village Hall (unique)", !hallExists);
             ToolButton(Tool.Cottage, "Cottage");
             ToolButton(Tool.Farm, "Farm");
             ToolButton(Tool.Fishery, "Fishery");
             ToolButton(Tool.LumberCamp, "Lumber Camp");
             ToolButton(Tool.Quarry, "Quarry");
-            ToolButton(Tool.LumberMill, "Lumber Mill");
-            ToolButton(Tool.FoodProcessor, "Food Processor");
             ToolButton(Tool.Marketplace, "Marketplace");
+
+            GUILayout.Space(6);
+            GUILayout.Label("TOWN INDUSTRIES" + (isTown ? "" : " (LOCKED)"));
+            if (!isTown) GUILayout.Label("Unlock: upgrade Village Hall at 50 residents.");
+            ToolButton(Tool.LumberMill, "Sawmill", isTown);
+            ToolButton(Tool.FoodProcessor, "Food Processing Workshop", isTown);
+            ToolButton(Tool.Stoneworks, "Stoneworks", isTown);
+            ToolButton(Tool.TradingHarbor, "Trading Harbor", isTown);
 
             GUILayout.Space(6);
             GUILayout.Label("INFRASTRUCTURE");
             ToolButton(Tool.DirtRoad, "Dirt road (free) [R]");
             ToolButton(Tool.StoneRoad, "Stone upgrade [T] (2 stone)");
-            ToolButton(Tool.UpgradeHousing, "Cottage > Townhouse");
+            var housingUnlocked = snap.Population >= HousingUpgradeCatalog.CottageToTownhouse.MinimumPopulation;
+            ToolButton(Tool.UpgradeHousing, "Cottage > Townhouse (20 residents)", housingUnlocked);
             ToolButton(Tool.Inspect, "Inspect / select [Esc]");
-
             GUILayout.Space(8);
             GUILayout.Label("Right drag: orbit");
             GUILayout.Label("Scroll: zoom");
@@ -491,13 +513,50 @@ namespace LittleEmpires.Unity
                     ChangePriority(building.Index, building.WorkPriority + 1);
                 GUILayout.EndHorizontal();
 
-                if (building.Id == BuildingCatalog.MarketplaceId && building.IsComplete)
+                if (building.Id == BuildingCatalog.CottageId)
                 {
+                    GUILayout.Space(6);
+                    var upgrade = HousingUpgradeCatalog.CottageToTownhouse;
+                    GUILayout.Label("COTTAGE > TOWNHOUSE");
+                    GUILayout.Label("Requires " + upgrade.MinimumPopulation + " residents.");
+                    GUILayout.Label("Cost: " + upgrade.Cost[Resource.Wood] + " wood, " +
+                        upgrade.Cost[Resource.Stone] + " stone, " +
+                        upgrade.Cost[Resource.Coins] + " coins.");
+                    var originalGuiState = GUI.enabled;
+                    var affordable = upgrade.Cost.All(entry =>
+                        snap.Resources.TryGetValue(entry.Key, out var amount) && amount >= entry.Value);
+                    GUI.enabled = originalGuiState && building.IsComplete &&
+                        !building.IsUpgrading && snap.Population >= upgrade.MinimumPopulation && affordable;
+                    if (GUILayout.Button("Upgrade to Townhouse"))
+                    {
+                        if (_session.UpgradeBuilding(building.Index))
+                        {
+                            _message = "Townhouse upgrade started.";
+                            Refresh();
+                        }
+                    }
+                    GUI.enabled = originalGuiState;
+                    if (building.IsUpgrading) GUILayout.Label("Upgrade in progress.");
+                    else if (snap.Population < upgrade.MinimumPopulation)
+                        GUILayout.Label("Need " + (upgrade.MinimumPopulation - snap.Population) + " more residents.");
+                    else if (!affordable) GUILayout.Label("Not enough upgrade resources.");
+                }
+
+                if ((building.Id == BuildingCatalog.MarketplaceId ||
+                    building.Id == BuildingCatalog.TradingHarborId) && building.IsComplete)
+                {
+                    var harbor = building.Id == BuildingCatalog.TradingHarborId;
+                    var capacity = harbor
+                        ? MarketplaceTrading.MaxUnitsPerHarborPerSeason
+                        : MarketplaceTrading.MaxUnitsPerMarketPerSeason;
                     GUILayout.Space(5);
-                    GUILayout.Label("MARKETPLACE");
-                    TradeButtons(Resource.Wood, "Wood");
-                    TradeButtons(Resource.Stone, "Stone");
-                    TradeButtons(Resource.Food, "Food");
+                    GUILayout.Label(harbor ? "TRADING HARBOR" : "MARKETPLACE");
+                    GUILayout.Label("Trade quota: " + building.UnitsTradedThisSeason + "/" + capacity +
+                        " units this season");
+                    var quantity = harbor ? 20 : 5;
+                    TradeButtons(Resource.Wood, "Wood", quantity);
+                    TradeButtons(Resource.Stone, "Stone", quantity);
+                    TradeButtons(Resource.Food, "Food", quantity);
                 }
             }
 
@@ -531,6 +590,7 @@ namespace LittleEmpires.Unity
 
             GUILayout.Space(6);
             GUILayout.Label("SETTLEMENT");
+            GUILayout.Label("Settlement tier: " + snap.Tier);
             GUILayout.Label("Residents: " + snap.Population + " / " + snap.HousingCapacity);
             GUILayout.Label("Available homes: " + Math.Max(0, snap.HousingCapacity - snap.Population));
             GUILayout.Label("Happiness: " + snap.Happiness + " / 100");
@@ -620,12 +680,15 @@ namespace LittleEmpires.Unity
             return snap.Resources.TryGetValue(resource, out var count) ? count : 0;
         }
 
-        private void ToolButton(Tool option, string title)
+        private void ToolButton(Tool option, string title, bool unlocked = true)
         {
-            var old = GUI.backgroundColor;
+            var oldColor = GUI.backgroundColor;
+            var wasEnabled = GUI.enabled;
+            GUI.enabled = wasEnabled && unlocked;
             if (_tool == option) GUI.backgroundColor = new Color(.74f, .91f, .7f);
             if (GUILayout.Button(title, GUILayout.Height(25))) _tool = option;
-            GUI.backgroundColor = old;
+            GUI.backgroundColor = oldColor;
+            GUI.enabled = wasEnabled;
         }
 
         private void TaxButton(TaxPolicy policy, string title, TaxPolicy current)
@@ -652,22 +715,22 @@ namespace LittleEmpires.Unity
                 _message = "Priority must be from -10 to 10.";
         }
 
-        private void TradeButtons(Resource resource, string title)
+        private void TradeButtons(Resource resource, string title, int units)
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label(title, GUILayout.Width(58));
-            if (GUILayout.Button("Buy 5"))
-                Trade(TradeDirection.Buy, resource);
-            if (GUILayout.Button("Sell 5"))
-                Trade(TradeDirection.Sell, resource);
+            if (GUILayout.Button("Buy " + units))
+                Trade(TradeDirection.Buy, resource, units);
+            if (GUILayout.Button("Sell " + units))
+                Trade(TradeDirection.Sell, resource, units);
             GUILayout.EndHorizontal();
         }
 
-        private void Trade(TradeDirection direction, Resource resource)
+        private void Trade(TradeDirection direction, Resource resource, int units)
         {
-            var outcome = _session.Trade(_selectedBuilding, direction, resource, 5);
+            var outcome = _session.Trade(_selectedBuilding, direction, resource, units);
             _message = outcome.Succeeded
-                ? direction + " 5 " + resource + " for " + outcome.TotalCoins + " coins."
+                ? direction + " " + units + " " + resource + " for " + outcome.TotalCoins + " coins."
                 : "Trading failed: " + outcome.Failure;
             if (outcome.Succeeded)
                 _cachedSnapshot = _session.Snapshot();
