@@ -17,6 +17,23 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      - name: Verify Unity copies match authoritative C# and starter scripts (R-1)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in src/LittleEmpires.Core/*.cs; do
+            name="${file##*/}"
+            diff -q "$file" "unity/LittleEmpires/Assets/LittleEmpires/Core/$name"
+          done
+          for file in unity/starter/Assets/LittleEmpires/Runtime/*.cs; do
+            name="${file##*/}"
+            diff -q "$file" "unity/LittleEmpires/Assets/LittleEmpires/Runtime/$name"
+          done
+          for file in unity/starter/Assets/LittleEmpires/Editor/*.cs; do
+            name="${file##*/}"
+            diff -q "$file" "unity/LittleEmpires/Assets/LittleEmpires/Editor/$name"
+          done
+          diff -q tests/LittleEmpires.SmokeTests/RoadPathChecks.cs unity/LittleEmpires/Assets/LittleEmpires/Editor/RoadPathChecks.cs
       - name: Install .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:

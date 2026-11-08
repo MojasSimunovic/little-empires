@@ -19,6 +19,7 @@ namespace LittleEmpires.Unity
         [SerializeField] private GameObject stoneBridgePrefab;
 
         private WorldGameSession _session;
+        private WorldSnapshot _cachedSnapshot;
         private IslandView _view;
         private Vector2 _menuScroll;
         private Vector2 _inspectorScroll;
@@ -85,7 +86,9 @@ namespace LittleEmpires.Unity
             _roadPreview = _session.PreviewRoadPath(RoadPaths.Between(_roadStart.Value, end, _xFirst), _roadTool == Tool.StoneRoad);
             _view.ShowRoadPreview(_roadPreview, _session.Island.Roads, _roadTool == Tool.StoneRoad);
             _message = _roadPreview.Segments.Count + " plots | " + _roadPreview.CostWood + " wood / " + _roadPreview.CostStone +
-                " stone | Tab: switch corner | " + (_roadPreview.Succeeded ? "Release to build" : _roadPreview.Failure.ToString());
+                " stone | Tab: switch corner | " + (_roadPreview.Succeeded ? "Release to build" :
+                    _roadPreview.Failure == RoadFailure.InvalidCrossing ? "Bridge only at marked crossings" :
+                    _roadPreview.Failure.ToString());
         }
 
         public void ToggleRoadCorner()
@@ -102,8 +105,13 @@ namespace LittleEmpires.Unity
             if (commit && _roadPreview != null)
             {
                 var result = _session.BuildRoadPath(_roadPreview.Segments, _roadTool == Tool.StoneRoad);
-                _message = result.Succeeded ? "Road route built: " + result.Segments.Count + " plots." : "Route rejected: " + result.Failure;
-                if (result.Succeeded) _view.UpdateRoads(_session.Snapshot());
+                _message = result.Succeeded ? "Road route built: " + result.Segments.Count + " plots." : "Route rejected: " + (result.Failure == RoadFailure.InvalidCrossing
+                    ? "Bridges are only allowed at the marked crossings." : result.Failure.ToString());
+                if (result.Succeeded)
+                {
+                    _cachedSnapshot = _session.Snapshot();
+                    _view.UpdateRoads(_cachedSnapshot);
+                }
             }
             CancelRoad();
         }
@@ -112,6 +120,7 @@ namespace LittleEmpires.Unity
         {
             _session = WorldGameSession.NewStrategicIsland(islandSeed, largeIsland ? 64 : 13, largeIsland ? 64 : 13);
             var snapshot = _session.Snapshot();
+            _cachedSnapshot = snapshot;
             var visualRoot = new GameObject("World visuals");
             _view = visualRoot.AddComponent<IslandView>();
             _view.BuildingPrefabs = buildingPrefabs;
@@ -123,6 +132,7 @@ namespace LittleEmpires.Unity
                 _view.LargeTerrain.Build(snapshot);
             }
             _view.Rebuild(snapshot);
+            _view.ConfigureCrossingMarkers(_session.Island.RiverCrossings);
 
             var camera = Camera.main;
             if (camera == null)
@@ -165,11 +175,12 @@ namespace LittleEmpires.Unity
 
             if (Input.GetKeyDown(KeyCode.R)) _tool = Tool.DirtRoad;
             if (Input.GetKeyDown(KeyCode.T)) _tool = Tool.StoneRoad;
-            if (Input.GetKeyDown(KeyCode.E)) EndSeason();
+            if ((Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))) EndSeason();
             if (Input.GetKeyDown(KeyCode.Escape)) { CancelRoad(); _tool = Tool.Inspect; }
             if (_roadStart.HasValue && (_tool != _roadTool || Input.GetMouseButtonDown(1))) { CancelRoad(); return; }
             if (_roadStart.HasValue && Input.GetKeyDown(KeyCode.Tab)) ToggleRoadCorner();
             var roadTool = _tool == Tool.DirtRoad || _tool == Tool.StoneRoad;
+            _view.SetCrossingMarkersHighlighted(roadTool);
             GridPosition picked = default;
             var hasPlot = !MouseInsideHud() && TryPick(out picked);
             // Definite assignment when the pointer is over UI.
@@ -303,7 +314,8 @@ namespace LittleEmpires.Unity
 
         private void Refresh()
         {
-            _view.Rebuild(_session.Snapshot());
+            _cachedSnapshot = _session.Snapshot();
+            _view.Rebuild(_cachedSnapshot);
             _view.Highlight(_selected);
         }
 
@@ -322,7 +334,8 @@ namespace LittleEmpires.Unity
         {
             if (_session == null) return;
 
-            var snap = _session.Snapshot();
+            var snap = _cachedSnapshot;
+            if (snap == null) return;
             if (_statusStyle == null)
             {
                 _statusStyle = new GUIStyle(GUI.skin.box)
@@ -344,7 +357,7 @@ namespace LittleEmpires.Unity
             GUILayout.BeginHorizontal();
             GUILayout.Label("Year " + snap.Year + "  /  " + snap.Season, _headerStyle);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("End Season [E]", GUILayout.Height(25)))
+            if (GUILayout.Button("End Season [Enter]", GUILayout.Height(25)))
                 EndSeason();
             GUILayout.EndHorizontal();
             GUILayout.Label("Wood " + ResourceAmount(snap, Resource.Wood) +
@@ -485,6 +498,7 @@ namespace LittleEmpires.Unity
             {
                 _session.ChangeTaxes(policy);
                 _message = "Taxation set to " + title + ".";
+                _cachedSnapshot = _session.Snapshot();
             }
             GUI.backgroundColor = old;
         }
@@ -492,7 +506,10 @@ namespace LittleEmpires.Unity
         private void ChangePriority(int index, int priority)
         {
             if (_session.ChangeWorkPriority(index, priority))
+            {
                 _message = "Workforce priority changed to " + priority + ".";
+                _cachedSnapshot = _session.Snapshot();
+            }
             else
                 _message = "Priority must be from -10 to 10.";
         }
@@ -514,6 +531,8 @@ namespace LittleEmpires.Unity
             _message = outcome.Succeeded
                 ? direction + " 5 " + resource + " for " + outcome.TotalCoins + " coins."
                 : "Trading failed: " + outcome.Failure;
+            if (outcome.Succeeded)
+                _cachedSnapshot = _session.Snapshot();
         }
     }
 }

@@ -29,5 +29,6 @@ cottage renderer bounds had a minimum 0.169-unit gap. The road bottoms met the
 Terrain surface. Of 3,034 non-water cells, 2,673 (88.1%) have exactly the common
 town elevation, 203 belong to the mountain, and 158 to the immediate coast.
 
-Vegetation, new surface textures and a river with a valid gameplay crossing
-remain a subsequent pass after flat-ground approval.
+A river, drag roads and three bridge crossings have since been added in code.
+See `docs/STATUS.md` and audit findings G-1/G-3 for remaining river alignment and discoverability issues.
+Vegetation and new surface textures remain a subsequent pass.

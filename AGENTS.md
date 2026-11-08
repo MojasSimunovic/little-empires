@@ -4,10 +4,11 @@ You are helping build **Little Empires**, a cozy, seasonal, isometric island-bui
 
 ## Start here
 
-1. Read `docs/CODEX_UNITY_HANDOFF.md` for the design brief and current implementation status.
-2. Inspect `unity/LittleEmpires/`, especially `Packages/manifest.json` and `Assets/`, and check current Git status before changing anything.
-3. If running on the user's Windows PC, connect to the already-installed **MCP for Unity** server and inspect its Editor connection, current scene, Console and project state. If the server is unavailable, say so and explain what the user needs to enable; never claim to have modified Unity.
-4. Prioritize small, visible, playable improvements and test them in Unity where possible.
+1. Read `docs/STATUS.md` for what is currently implemented, what needs verification, and known bugs; older handoff notes can be historical.
+2. Read `docs/CODEX_UNITY_HANDOFF.md` for the historical design brief and workflow.
+3. Inspect `unity/LittleEmpires/`, especially `Packages/manifest.json` and `Assets/`, and check current Git status before changing anything.
+4. If running on the user's Windows PC, connect to the already-installed **MCP for Unity** server and inspect its Editor connection, current scene, Console and project state. If the server is unavailable, say so and explain what the user needs to enable; never claim to have modified Unity.
+5. Prioritize small, visible, playable improvements and test them in Unity where possible.
 
 ## Architecture: non-negotiables
 
@@ -21,12 +22,12 @@ You are helping build **Little Empires**, a cozy, seasonal, isometric island-bui
 ## Product/art direction
 
 - Tiny Glade is the main **atmosphere reference**, not a request to clone its systems: warm cream walls, terracotta roofs, varied medieval architecture, lush foliage, flowers, cozy sunlight, gentle life and seasonal changes.
-- Player sees a small readable island in an elevated orbiting camera. Keep a **logical tile/grid economy** but soften/hide the visible grid with natural ground, terrain, roads and decorations.
+- Player sees a large 64×64 mostly-flat city-building island in an elevated orbiting camera. Keep a **logical tile/grid economy** but soften/hide the visible grid with natural ground, terrain, roads and decorations.
 - The user likes **Quaternius Medieval Village MegaKit** (free standard pack) as a modular foundation for cottages, farms, workshops and mills; adapt palettes and prefabs, and use only properly licensed assets.
 - Aim for tasteful, performant stylized visuals; plain cubes are scaffolding, not the final target.
 - The user wants to playtest iteratively, with working controls before visual complexity.
 
-## First local Codex + Unity mission
+## Historical first local Codex + Unity mission (completed setup; see docs/STATUS.md)
 
 1. Verify MCP Unity connection with a **read-only scene/hierarchy/Console inspection**; confirm active project path and source files.
 2. If not already present, ensure the seeded Unity starter scene exists and runs (see `unity/GETTING_STARTED_WINDOWS.md`). Confirm changes to core compile and Unity Play mode works.
@@ -35,6 +36,8 @@ You are helping build **Little Empires**, a cozy, seasonal, isometric island-bui
 5. Keep progress measurable: show the updated Game view, test click-to-build and End Season, inspect Console, and report what changed and what is unverified.
 
 ## Key references
+
+- `docs/STATUS.md`: **read first**, current implementation and stabilization issues
 
 - `docs/CODEX_UNITY_HANDOFF.md`: this conversation's compact handoff
 - `unity/GETTING_STARTED_WINDOWS.md`: Windows starter and source-sync commands

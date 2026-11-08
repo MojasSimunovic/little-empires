@@ -18,6 +18,64 @@ namespace LittleEmpires.Unity
         private Transform _ghostRoot;
         private float RoadCell => LargeTerrain != null ? LargeTerrain.CellSize : 1f;
 
+        private readonly Dictionary<GridPosition, GameObject> _crossingMarkers =
+            new Dictionary<GridPosition, GameObject>();
+        private Transform _crossingsRoot;
+        private bool _crossingsHighlighted;
+
+        // A crossing is discoverable before a road is dragged over it.
+        // Markers have no colliders so terrain picking still works.
+        public void ConfigureCrossingMarkers(IReadOnlyDictionary<GridPosition, BridgeAxis> crossings)
+        {
+            if (crossings == null || crossings.Count == 0) return;
+            if (_crossingsRoot == null)
+            {
+                _crossingsRoot = new GameObject("Bridge crossing bank posts").transform;
+                _crossingsRoot.SetParent(transform, false);
+            }
+            foreach (var crossing in crossings)
+            {
+                if (_crossingMarkers.ContainsKey(crossing.Key)) continue;
+                var marker = new GameObject("Crossing " + crossing.Key.X + "," + crossing.Key.Z);
+                marker.transform.SetParent(_crossingsRoot, false);
+                for (var side = -1; side <= 1; side += 2)
+                {
+                    var bank = new GridPosition(crossing.Key.X + side, crossing.Key.Z);
+                    var position = WorldPosition(bank);
+                    var post = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                    post.name = "Bridge location post";
+                    post.transform.SetParent(marker.transform, false);
+                    post.transform.position = position + new Vector3(-side * RoadCell * .35f, .25f, 0);
+                    post.transform.localScale = new Vector3(.15f, .22f, .15f);
+                    var collider = post.GetComponent<Collider>();
+                    if (collider != null) Destroy(collider);
+                }
+                _crossingMarkers.Add(crossing.Key, marker);
+            }
+            UpdateCrossingMarkers();
+        }
+
+        public void SetCrossingMarkersHighlighted(bool highlighted)
+        {
+            if (_crossingsHighlighted == highlighted) return;
+            _crossingsHighlighted = highlighted;
+            UpdateCrossingMarkers();
+        }
+
+        private void UpdateCrossingMarkers()
+        {
+            var color = _crossingsHighlighted
+                ? new Color(.97f, .78f, .28f)
+                : new Color(.62f, .48f, .31f);
+            foreach (var marker in _crossingMarkers)
+            {
+                marker.Value.SetActive(!_roadObjects.ContainsKey(marker.Key));
+                foreach (var renderer in marker.Value.GetComponentsInChildren<Renderer>(true))
+                    renderer.sharedMaterial = MaterialFor(color);
+            }
+        }
+
+
         public void UpdateRoads(WorldSnapshot state)
         {
             if (_roadsRoot == null) { _roadsRoot = new GameObject("Persistent roads").transform; _roadsRoot.SetParent(transform, false); }
@@ -55,6 +113,7 @@ namespace LittleEmpires.Unity
                         Patch(root.transform, center + new Vector3(d.X,0,d.Z)*RoadCell*.375f,
                             RoadCell*(d.X!=0?.25f:.52f), RoadCell*(d.Z!=0?.25f:.52f), color);
             }
+            UpdateCrossingMarkers();
         }
 
         private Vector3 BridgePosition(GridPosition p)

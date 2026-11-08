@@ -14,3 +14,8 @@ UserSettings/
 # .NET build outputs
 **/bin/
 **/obj/
+
+# Unity regenerates these IDE project/solution files; keep authoritative .NET csproj under src/ and tests/.
+unity/LittleEmpires/*.csproj
+unity/LittleEmpires/*.sln
+unity/LittleEmpires/*.slnx
