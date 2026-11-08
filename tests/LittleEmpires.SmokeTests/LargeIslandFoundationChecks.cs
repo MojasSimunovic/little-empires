@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using LittleEmpires.Core;
 
@@ -47,6 +48,31 @@ public static class LargeIslandFoundationChecks
                 island.Roads.EvaluateDirtPlacement(neighbor.Position).Succeeded)).ToArray();
         check(accessibleLedges.Length >= 10,
             "T-2: ten level mountain-foot ledges have an adjacent road-buildable tile");
+
+        // Connectivity must be possible from the central settlement, not only
+        // from a road on a disconnected one-tile island by the mountain.
+        var reachableRoadTiles = new HashSet<GridPosition>();
+        var roadFrontier = new Queue<GridPosition>();
+        var townCenter = new GridPosition(32, 32);
+        check(island.Roads.EvaluateDirtPlacement(townCenter).Succeeded,
+            "T-2: the central town remains a valid start for roads");
+        reachableRoadTiles.Add(townCenter);
+        roadFrontier.Enqueue(townCenter);
+        while (roadFrontier.Count > 0)
+        {
+            var from = roadFrontier.Dequeue();
+            foreach (var next in island.Neighbours(from))
+                if (reachableRoadTiles.Add(next.Position))
+                {
+                    if (island.Roads.EvaluateDirtPlacement(next.Position).Succeeded)
+                        roadFrontier.Enqueue(next.Position);
+                    else
+                        reachableRoadTiles.Remove(next.Position);
+                }
+        }
+        check(quarrySites.Count(tile => island.Neighbours(tile.Position)
+                .Any(neighbor => reachableRoadTiles.Contains(neighbor.Position))) >= 10,
+            "T-2: at least ten Quarry ledges have a continuous legal road route from town");
 
         // Creating plots should be financially possible and should not affect other terrain types.
         var fishingSession = WorldGameSession.NewStrategicIsland(42, 64, 64);
