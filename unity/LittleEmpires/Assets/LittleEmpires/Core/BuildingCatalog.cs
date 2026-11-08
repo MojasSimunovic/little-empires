@@ -23,6 +23,8 @@ public static class BuildingCatalog
     public const string TownHallId = "town-hall";
     public const string LumberMillId = "lumber-mill";
     public const string FoodProcessorId = "food-processor";
+    public const string StoneworksId = "stoneworks";
+    public const string TradingHarborId = "trading-harbor";
     public const string MarketplaceId = "marketplace";
 
     private static readonly IReadOnlyList<BuildingDefinition> Definitions =
@@ -66,13 +68,25 @@ public static class BuildingCatalog
                 TownHallId, "Town Hall", Map(), 1, Map(),
                 CanBuildDirectly: false),
             new BuildingDefinition(
-                LumberMillId, "Lumber Mill",
+                LumberMillId, "Sawmill",
                 Map((Resource.Wood, 35), (Resource.Stone, 15), (Resource.Coins, 30)),
-                2, Map(), WorkersRequired: 2, UpkeepCoinsPerSeason: 4),
+                2, Map(), WorkersRequired: 2, UpkeepCoinsPerSeason: 4,
+                RequiredTier: SettlementTier.Town),
             new BuildingDefinition(
-                FoodProcessorId, "Food Processing Plant",
+                FoodProcessorId, "Food Processing Workshop",
                 Map((Resource.Wood, 40), (Resource.Stone, 20), (Resource.Coins, 40)),
-                3, Map(), WorkersRequired: 3, UpkeepCoinsPerSeason: 5),
+                3, Map(), WorkersRequired: 3, UpkeepCoinsPerSeason: 5,
+                RequiredTier: SettlementTier.Town),
+            new BuildingDefinition(
+                StoneworksId, "Stoneworks",
+                Map((Resource.Wood, 35), (Resource.Stone, 20), (Resource.Coins, 45)),
+                2, Map(), WorkersRequired: 2, UpkeepCoinsPerSeason: 4,
+                RequiredTier: SettlementTier.Town),
+            new BuildingDefinition(
+                TradingHarborId, "Trading Harbor",
+                Map((Resource.Wood, 45), (Resource.Stone, 30), (Resource.Coins, 100)),
+                3, Map(), SiteRequirement: PlacementRequirement.Shoreline,
+                RequiredTier: SettlementTier.Town),
             new BuildingDefinition(
                 MarketplaceId, "Marketplace",
                 Map((Resource.Wood, 25), (Resource.Stone, 10), (Resource.Coins, 20)),

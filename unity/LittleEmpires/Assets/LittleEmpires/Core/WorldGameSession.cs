@@ -26,7 +26,8 @@ public sealed record WorldSnapshot(
     IReadOnlyDictionary<Resource, int> Resources,
     IReadOnlyList<IslandTile> Terrain,
     IReadOnlyList<BuildingView> Buildings,
-    IReadOnlyList<RoadView> Roads);
+    IReadOnlyList<RoadView> Roads,
+    SettlementTier Tier);
 
 /// <summary>
 /// Application-facing command boundary for a single-island game. Unity should
@@ -55,8 +56,17 @@ public sealed class WorldGameSession
         new(new GameState(wood: 120, stone: 60, food: 80, coins: 200),
             new Settlement(population: 8, economyMode: EconomyMode.Strategic), island);
 
-    public PlacementResult PreviewBuilding(GridPosition position, string buildingId) =>
-        BuildingPlacementRules.Evaluate(Island, position, BuildingCatalog.Get(buildingId));
+    public PlacementResult PreviewBuilding(GridPosition position, string buildingId)
+    {
+        var definition = BuildingCatalog.Get(buildingId);
+        if (!definition.CanBuildDirectly)
+            return new PlacementResult(PlacementFailure.UpgradeOnly);
+        if (!Settlement.IsBuildingUnlocked(definition))
+            return new PlacementResult(PlacementFailure.RequiresSettlementTier);
+        if (!Settlement.CanStartBuilding(definition))
+            return new PlacementResult(PlacementFailure.CivicHallAlreadyBuilt);
+        return BuildingPlacementRules.Evaluate(Island, position, definition);
+    }
 
     public bool PlaceBuilding(GridPosition position, string buildingId) =>
         Settlement.TryStartConstruction(State, Island, position, buildingId);
@@ -106,6 +116,7 @@ public sealed class WorldGameSession
                 .ToArray()),
             Array.AsReadOnly(Island.Roads.Segments
                 .Select(entry => new RoadView(entry.Key, entry.Value,
-                    Island.RiverCrossings.TryGetValue(entry.Key, out var axis) ? axis : BridgeAxis.None)).ToArray()));
+                    Island.RiverCrossings.TryGetValue(entry.Key, out var axis) ? axis : BridgeAxis.None)).ToArray()),
+            Settlement.Tier);
 }
 }

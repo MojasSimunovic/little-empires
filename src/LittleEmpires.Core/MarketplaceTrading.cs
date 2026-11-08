@@ -44,6 +44,7 @@ public readonly struct TradeResult
 public static class MarketplaceTrading
 {
     public const int MaxUnitsPerMarketPerSeason = 30;
+    public const int MaxUnitsPerHarborPerSeason = 120;
 
     public static (int Buy, int Sell) Prices(Resource resource) => resource switch
     {
@@ -70,7 +71,9 @@ public static class MarketplaceTrading
         if (marketplaceIndex < 0 || marketplaceIndex >= settlement.Buildings.Count)
             return Fail(TradeFailure.InvalidMarket);
         var market = settlement.Buildings[marketplaceIndex];
-        if (!market.IsComplete || market.Definition.Id != BuildingCatalog.MarketplaceId ||
+        var isMarketplace = market.Definition.Id == BuildingCatalog.MarketplaceId;
+        var isHarbor = market.Definition.Id == BuildingCatalog.TradingHarborId;
+        if (!market.IsComplete || (!isMarketplace && !isHarbor) ||
             market.Position is null ||
             !island.TryGetBuilding(market.Position.Value, out var occupant) ||
             !ReferenceEquals(occupant, market))
@@ -85,7 +88,8 @@ public static class MarketplaceTrading
                 market.Position.Value, house.Position.Value));
         if (!connectedHousing) return Fail(TradeFailure.NotConnected);
 
-        if ((long)market.UnitsTradedThisSeason + units > MaxUnitsPerMarketPerSeason)
+        var seasonalLimit = isHarbor ? MaxUnitsPerHarborPerSeason : MaxUnitsPerMarketPerSeason;
+        if ((long)market.UnitsTradedThisSeason + units > seasonalLimit)
             return Fail(TradeFailure.SeasonalLimit);
 
         var price = Prices(resource);

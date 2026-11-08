@@ -23,6 +23,8 @@ public enum PlacementFailure
     AlreadyOccupied,
     RoadPresent,
     UpgradeOnly,
+    RequiresSettlementTier,
+    CivicHallAlreadyBuilt,
     RequiresFlatLand,
     RequiresFertileLand,
     RequiresMountain,

@@ -51,7 +51,8 @@ public static class HousingUpgradeCatalog
             [Resource.Stone] = 10,
             [Resource.Coins] = 20
         }),
-        ConstructionSeasons: 2);
+        ConstructionSeasons: 2,
+        MinimumPopulation: 20);
 
     private static readonly IReadOnlyDictionary<string, BuildingUpgradeDefinition> BySource =
         new ReadOnlyDictionary<string, BuildingUpgradeDefinition>(
