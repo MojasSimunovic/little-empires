@@ -114,6 +114,7 @@ namespace LittleEmpires.Unity
                             RoadCell*(d.X!=0?.25f:.52f), RoadCell*(d.Z!=0?.25f:.52f), color);
             }
             UpdateCrossingMarkers();
+            UpdateNatureVisibility(state);
         }
 
         private Vector3 BridgePosition(GridPosition p)
