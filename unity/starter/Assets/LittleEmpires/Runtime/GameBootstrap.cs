@@ -165,7 +165,7 @@ namespace LittleEmpires.Unity
 
             if (Input.GetKeyDown(KeyCode.R)) _tool = Tool.DirtRoad;
             if (Input.GetKeyDown(KeyCode.T)) _tool = Tool.StoneRoad;
-            if (Input.GetKeyDown(KeyCode.E)) EndSeason();
+            if ((Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))) EndSeason();
             if (Input.GetKeyDown(KeyCode.Escape)) { CancelRoad(); _tool = Tool.Inspect; }
             if (_roadStart.HasValue && (_tool != _roadTool || Input.GetMouseButtonDown(1))) { CancelRoad(); return; }
             if (_roadStart.HasValue && Input.GetKeyDown(KeyCode.Tab)) ToggleRoadCorner();
@@ -344,7 +344,7 @@ namespace LittleEmpires.Unity
             GUILayout.BeginHorizontal();
             GUILayout.Label("Year " + snap.Year + "  /  " + snap.Season, _headerStyle);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("End Season [E]", GUILayout.Height(25)))
+            if (GUILayout.Button("End Season [Enter]", GUILayout.Height(25)))
                 EndSeason();
             GUILayout.EndHorizontal();
             GUILayout.Label("Wood " + ResourceAmount(snap, Resource.Wood) +
