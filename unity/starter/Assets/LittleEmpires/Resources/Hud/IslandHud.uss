@@ -1,0 +1,84 @@
+.hud {
+    flex-grow: 1;
+    color: rgb(241, 233, 209);
+    font-size: 14px;
+}
+.surface {
+    background-color: rgba(27, 44, 36, 0.94);
+    border-width: 1px;
+    border-color: rgba(205, 174, 112, 0.52);
+    border-radius: 10px;
+    padding: 9px;
+}
+.top-bar {
+    position: absolute;
+    top: 12px;
+    align-self: center;
+    height: 59px;
+    flex-direction: row;
+    align-items: center;
+    padding: 7px 12px;
+}
+.calendar { min-width: 125px; margin-right: 10px; }
+.heading { font-size: 18px; -unity-font-style: bold; }
+.eyebrow { color: rgb(222, 193, 134); font-size: 12px; }
+.stockpiles, .row { flex-direction: row; align-items: center; }
+.stat { margin: 0 8px; }
+.resource { min-width: 85px; margin: 0 4px; }
+.resource-icon { width: 22px; height: 22px; margin-right: 5px; }
+.resource-name { font-size: 11px; color: rgb(215, 207, 181); }
+.resource-value { font-size: 17px; -unity-font-style: bold; }
+.build-dock { position: absolute; left: 14px; bottom: 14px; }
+.cards { margin-top: 6px; }
+.hud Button {
+    color: rgb(245, 234, 205);
+    background-color: rgb(52, 70, 55);
+    border-color: rgb(90, 104, 79);
+    border-radius: 5px;
+    margin: 2px;
+    padding: 4px 9px;
+    min-height: 26px;
+    transition-property: background-color, border-color;
+    transition-duration: 120ms;
+}
+.hud Button:hover { background-color: rgb(72, 88, 66); }
+.hud Button:active { background-color: rgb(87, 100, 72); }
+.hud Button:disabled { opacity: 0.45; }
+.hud Button.primary {
+    margin-left: 10px;
+    min-height: 35px;
+    color: rgb(47, 43, 30);
+    background-color: rgb(229, 200, 141);
+    border-color: rgb(243, 218, 168);
+    -unity-font-style: bold;
+}
+.hud Button.primary:hover { background-color: rgb(246, 219, 163); }
+.hud Button.selected { border-color: rgb(247, 204, 116); background-color: rgb(79, 91, 60); }
+.hud Button.card {
+    width: 85px;
+    height: 87px;
+    padding: 2px;
+    justify-content: center;
+    align-items: center;
+}
+.card-image { width: 69px; height: 56px; -unity-background-scale-mode: scale-to-fit; }
+.card-caption { font-size: 11px; white-space: normal; -unity-text-align: middle-center; }
+.locked .card-image { opacity: 0.38; }
+.unaffordable .card-caption, .warning { color: rgb(255, 181, 134); }
+.card-badge { position: absolute; top: 1px; right: 3px; color: rgb(248, 211, 139); font-size: 10px; }
+.inspector {
+    position: absolute;
+    top: 86px;
+    right: 14px;
+    width: 300px;
+    max-height: 72%;
+    display: none;
+}
+.inspector-header { margin-bottom: 6px; }
+.grow { flex-grow: 1; flex-shrink: 1; }
+.hud Button.close { min-width: 30px; font-size: 18px; }
+.detail { white-space: normal; margin-bottom: 4px; }
+.section { margin-top: 9px; margin-bottom: 4px; color: rgb(228, 195, 130); -unity-font-style: bold; }
+.feedback { position: absolute; align-self: center; top: 78px; white-space: normal; max-width: 370px; }
+.tooltip { position: absolute; width: 280px; display: none; padding: 12px; }
+#road-mode { margin-top: 5px; display: none; }

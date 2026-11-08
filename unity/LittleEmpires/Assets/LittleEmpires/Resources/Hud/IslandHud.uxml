@@ -1,0 +1,28 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="hud" class="hud" picking-mode="Ignore">
+        <ui:VisualElement name="top-bar" class="surface top-bar">
+            <ui:VisualElement class="calendar">
+                <ui:Label name="season" class="heading" />
+                <ui:Label name="tier" class="eyebrow" />
+            </ui:VisualElement>
+            <ui:VisualElement name="stockpiles" class="stockpiles" />
+            <ui:Label name="population" class="stat" />
+            <ui:Label name="happiness" class="stat" />
+            <ui:Button name="end-season" text="End Season  ›" class="primary" />
+        </ui:VisualElement>
+        <ui:VisualElement name="build-dock" class="surface build-dock">
+            <ui:VisualElement name="tabs" class="row" />
+            <ui:VisualElement name="cards" class="row cards" />
+            <ui:Toggle name="road-mode" text="Click start / click end" />
+        </ui:VisualElement>
+        <ui:VisualElement name="inspector" class="surface inspector">
+            <ui:VisualElement class="row inspector-header">
+                <ui:Label name="building-name" class="heading grow" />
+                <ui:Button name="close-inspector" text="×" class="close" />
+            </ui:VisualElement>
+            <ui:ScrollView name="inspector-body" horizontal-scroller-visibility="Hidden" />
+        </ui:VisualElement>
+        <ui:Label name="feedback" class="surface feedback" picking-mode="Ignore" />
+        <ui:VisualElement name="tooltip" class="surface tooltip" />
+    </ui:VisualElement>
+</ui:UXML>

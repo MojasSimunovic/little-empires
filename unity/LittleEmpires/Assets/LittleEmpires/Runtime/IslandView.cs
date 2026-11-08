@@ -326,11 +326,17 @@ namespace LittleEmpires.Unity
             if (BuildingPrefabs != null && _missingPrefabs.Add(building.Id))
                 Debug.LogWarning("No building prefab registered for " + building.Id + "; using procedural visuals.");
 
-            switch (building.Id)
+            PopulateFallbackBuilding(root, building.Id);
+            return home;
+        }
+
+        public void PopulateFallbackBuilding(Transform root, string buildingId)
+        {
+            switch (buildingId)
             {
                 case BuildingCatalog.CottageId:
                 case BuildingCatalog.TownhouseId:
-                    House(root, building.Id == BuildingCatalog.TownhouseId);
+                    House(root, buildingId == BuildingCatalog.TownhouseId);
                     break;
                 case BuildingCatalog.FarmId:
                     Farm(root);
@@ -387,7 +393,6 @@ namespace LittleEmpires.Unity
                     House(root, false);
                     break;
             }
-            return home;
         }
 
         private void House(Transform root, bool tall, float size = .8f)

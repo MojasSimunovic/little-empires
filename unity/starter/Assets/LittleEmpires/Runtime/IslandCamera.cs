@@ -50,9 +50,7 @@ namespace LittleEmpires.Unity
 
         private void UpdatePose()
         {
-            var dock = GameBootstrap.DockWidth / Mathf.Max(1, Screen.width);
-            var header = GameBootstrap.HeaderHeight / Mathf.Max(1, Screen.height);
-            _camera.rect = new Rect(dock, 0, Mathf.Max(.01f, 1f - dock), Mathf.Max(.01f, 1f - header));
+            _camera.rect = new Rect(0, 0, 1, 1);
 
             var yawRotation = Quaternion.Euler(0,_yaw,0);
             var motion = new Vector3(Input.GetAxisRaw("Horizontal"),0,Input.GetAxisRaw("Vertical"));

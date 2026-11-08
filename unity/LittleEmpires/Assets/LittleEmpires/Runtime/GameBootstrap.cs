@@ -22,11 +22,7 @@ namespace LittleEmpires.Unity
         private WorldGameSession _session;
         private WorldSnapshot _cachedSnapshot;
         private IslandView _view;
-        private Vector2 _menuScroll;
-        private Vector2 _inspectorScroll;
         private bool _showInspector;
-        private GUIStyle _statusStyle;
-        private GUIStyle _headerStyle;
         private GridPosition? _selected;
         private int _selectedBuilding = -1;
         private string _message = "Select a building, then click a valid island tile.";
@@ -47,8 +43,7 @@ namespace LittleEmpires.Unity
             TradingHarbor,
             Marketplace,
             DirtRoad,
-            StoneRoad,
-            UpgradeHousing
+            StoneRoad
         }
 
         // On a fresh island, founding the administrative centre is the suggested first action.
@@ -164,7 +159,7 @@ namespace LittleEmpires.Unity
             if (controller == null) controller = camera.gameObject.AddComponent<IslandCamera>();
             controller.Frame(camera, _view.LandBounds);
 
-            var sun = FindObjectsByType<Light>(FindObjectsSortMode.None)
+            var sun = FindObjectsByType<Light>()
                 .FirstOrDefault(light => light.type == LightType.Directional);
             if (sun == null)
             {
@@ -182,16 +177,19 @@ namespace LittleEmpires.Unity
             RenderSettings.ambientEquatorColor = new Color(.51f, .55f, .48f);
             RenderSettings.ambientGroundColor = new Color(.32f, .31f, .25f);
             _message = "Choose a tool, then click a plot.";
+            _activeHud = _hud = new IslandHud(this);
         }
+
+        private void LateUpdate() => _hud?.Sync();
 
         private void Update()
         {
             if (_session == null) return;
 
-            if (Input.GetKeyDown(KeyCode.R)) _tool = Tool.DirtRoad;
-            if (Input.GetKeyDown(KeyCode.T)) _tool = Tool.StoneRoad;
+            if (Input.GetKeyDown(KeyCode.R)) SelectTool(Tool.DirtRoad);
+            if (Input.GetKeyDown(KeyCode.T)) SelectTool(Tool.StoneRoad);
             if ((Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))) EndSeason();
-            if (Input.GetKeyDown(KeyCode.Escape)) { CancelRoad(); _tool = Tool.Inspect; }
+            if (Input.GetKeyDown(KeyCode.Escape)) { CancelRoad(); _tool = Tool.Inspect; _showInspector = false; }
             if (_roadStart.HasValue && (_tool != _roadTool || Input.GetMouseButtonDown(1))) { CancelRoad(); return; }
             if (_roadStart.HasValue && Input.GetKeyDown(KeyCode.Tab)) ToggleRoadCorner();
             var roadTool = _tool == Tool.DirtRoad || _tool == Tool.StoneRoad;
@@ -200,9 +198,9 @@ namespace LittleEmpires.Unity
             var hasPlot = !MouseInsideHud() && TryPick(out picked);
             var buildingId = BuildingIdForTool(_tool);
             var definition = buildingId == null ? null : BuildingCatalog.Get(buildingId);
-            if (hasPlot && definition != null && (definition.Width > 1 || definition.Height > 1))
+            if (hasPlot && definition != null)
                 _view.ShowFootprintPreview(picked, definition.Width, definition.Height,
-                    _session.PreviewBuilding(picked, buildingId).Allowed);
+                    _session.PreviewBuilding(picked, buildingId).Allowed && _session.State.CanAfford(definition.Cost));
             else
                 _view.ShowFootprintPreview(null);
 
@@ -243,15 +241,6 @@ namespace LittleEmpires.Unity
             return false;
         }
 
-        internal const float HeaderHeight = 72f;
-        internal static float DockWidth => Mathf.Clamp(Screen.width * .26f, 200f, 244f);
-
-        internal static bool MouseInsideHud()
-        {
-            var point = Input.mousePosition;
-            return point.x < DockWidth || point.y > Screen.height - HeaderHeight;
-        }
-
         private void ClickTile(GridPosition position)
         {
             _selected = position;
@@ -268,6 +257,8 @@ namespace LittleEmpires.Unity
                     break;
                 }
             }
+
+            _showInspector = _selectedBuilding >= 0 && _tool != Tool.DirtRoad && _tool != Tool.StoneRoad;
 
             // Existing Hall can always be opened by clicking its plot, even with
             // a build tool selected. Do not duplicate it or route input to its prefab.
@@ -303,15 +294,6 @@ namespace LittleEmpires.Unity
                         ? "Dirt road upgraded for 2 stone."
                         : "Upgrade rejected: " + stone.Failure;
                     if (stone.Succeeded) Refresh();
-                    return;
-
-                case Tool.UpgradeHousing:
-                    var upgraded = _selectedBuilding >= 0 &&
-                        _session.UpgradeBuilding(_selectedBuilding);
-                    _message = upgraded
-                        ? "Cottage upgrade started."
-                        : "Requires a completed Cottage, 20 residents and upgrade materials.";
-                    if (upgraded) Refresh();
                     return;
             }
 
@@ -394,331 +376,8 @@ namespace LittleEmpires.Unity
             Refresh();
         }
 
-        private void OnGUI()
-        {
-            if (_session == null) return;
-
-            var snap = _cachedSnapshot;
-            if (snap == null) return;
-            if (_statusStyle == null)
-            {
-                _statusStyle = new GUIStyle(GUI.skin.box)
-                {
-                    wordWrap = true,
-                    alignment = TextAnchor.UpperLeft
-                };
-                _headerStyle = new GUIStyle(GUI.skin.label) { fontSize = 15 };
-            }
-
-            var tint = GUI.color;
-            GUI.color = new Color(.13f, .19f, .17f);
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, HeaderHeight), Texture2D.whiteTexture);
-            GUI.DrawTexture(new Rect(0, HeaderHeight, DockWidth, Screen.height - HeaderHeight),
-                Texture2D.whiteTexture);
-            GUI.color = tint;
-
-            GUILayout.BeginArea(new Rect(10, 5, Screen.width - 20, HeaderHeight - 10));
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Year " + snap.Year + "  /  " + snap.Season, _headerStyle);
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("End Season [Enter]", GUILayout.Height(25)))
-                EndSeason();
-            GUILayout.EndHorizontal();
-            GUILayout.Label("Wood " + ResourceAmount(snap, Resource.Wood) +
-                "    Stone " + ResourceAmount(snap, Resource.Stone) +
-                "    Food " + ResourceAmount(snap, Resource.Food) +
-                "    Coins " + ResourceAmount(snap, Resource.Coins) +
-                "    |    Residents " + snap.Population + "/" + snap.HousingCapacity +
-                "    Happiness " + snap.Happiness +
-                "    Tier: " + snap.Tier, _headerStyle);
-            GUILayout.EndArea();
-
-            GUILayout.BeginArea(new Rect(8, HeaderHeight + 8, DockWidth - 16,
-                Mathf.Max(0, Screen.height - HeaderHeight - 16)));
-            var showInspector = GUILayout.Toolbar(_showInspector ? 1 : 0,
-                new[] { "Build", "Settlement" }) == 1;
-            if (showInspector != _showInspector)
-            {
-                _showInspector = showInspector;
-                GUIUtility.ExitGUI();
-            }
-            GUILayout.Label(_message, _statusStyle, GUILayout.ExpandWidth(true));
-            if (_tool == Tool.DirtRoad || _tool == Tool.StoneRoad)
-            {
-                var clickMode = GUILayout.Toggle(clickRoadEndpoints, "Click start / click end");
-                if (clickMode != clickRoadEndpoints) { CancelRoad(); clickRoadEndpoints = clickMode; }
-            }
-
-            if (_showInspector)
-            {
-                _inspectorScroll = GUILayout.BeginScrollView(_inspectorScroll);
-                DrawInspector(snap);
-                GUILayout.EndScrollView();
-            }
-            else
-            {
-                _menuScroll = GUILayout.BeginScrollView(_menuScroll);
-                DrawBuildTools();
-                GUILayout.EndScrollView();
-            }
-
-            GUILayout.EndArea();
-        }
-
-        private void DrawBuildTools()
-        {
-            var snap = _cachedSnapshot;
-            var isTown = snap.Tier >= SettlementTier.Town;
-            var hallExists = snap.Buildings.Any(building => IsCivicHall(building.Id));
-            GUILayout.Label("SETTLEMENT: " + snap.Tier.ToString().ToUpperInvariant());
-            GUILayout.Label("VILLAGE BUILDINGS");
-            ToolButton(Tool.VillageHall, "Village Hall (unique)", !hallExists);
-            ToolButton(Tool.Cottage, "Cottage");
-            ToolButton(Tool.Farm, "Farm");
-            ToolButton(Tool.Fishery, "Fishery");
-            ToolButton(Tool.LumberCamp, "Lumber Camp");
-            ToolButton(Tool.Quarry, "Quarry");
-            ToolButton(Tool.Marketplace, "Marketplace");
-
-            GUILayout.Space(6);
-            GUILayout.Label("TOWN INDUSTRIES" + (isTown ? "" : " (LOCKED)"));
-            if (!isTown) GUILayout.Label("Unlock: upgrade Village Hall at 50 residents.");
-            ToolButton(Tool.LumberMill, "Sawmill", isTown);
-            ToolButton(Tool.FoodProcessor, "Food Processing Workshop", isTown);
-            ToolButton(Tool.Stoneworks, "Stoneworks", isTown);
-            ToolButton(Tool.TradingHarbor, "Trading Harbor", isTown);
-
-            GUILayout.Space(6);
-            GUILayout.Label("INFRASTRUCTURE");
-            ToolButton(Tool.DirtRoad, "Dirt road (free) [R]");
-            ToolButton(Tool.StoneRoad, "Stone upgrade [T] (2 stone)");
-            var housingUnlocked = snap.Population >= HousingUpgradeCatalog.CottageToTownhouse.MinimumPopulation;
-            ToolButton(Tool.UpgradeHousing, "Cottage > Townhouse (20 residents)", housingUnlocked);
-            ToolButton(Tool.Inspect, "Inspect / select [Esc]");
-            GUILayout.Space(8);
-            GUILayout.Label("Right drag: orbit");
-            GUILayout.Label("Scroll: zoom");
-        }
-
-        private void DrawInspector(WorldSnapshot snap)
-        {
-            if (_selectedBuilding >= 0 && _selectedBuilding < snap.Buildings.Count &&
-                IsCivicHall(snap.Buildings[_selectedBuilding].Id))
-            {
-                DrawCivicHallInspector(snap, snap.Buildings[_selectedBuilding]);
-                return;
-            }
-
-            GUILayout.Label("Select the Village Hall or Town Hall to manage taxes.");
-            GUILayout.Space(8);
-            if (_selected.HasValue)
-                GUILayout.Label("Plot: (" + _selected.Value.X + ", " +
-                    _selected.Value.Z + ")");
-
-            if (_selectedBuilding >= 0 && _selectedBuilding < snap.Buildings.Count)
-            {
-                var building = snap.Buildings[_selectedBuilding];
-                GUILayout.Label(building.Name +
-                    (building.IsComplete ? " — Complete" : " — Building"));
-                GUILayout.Label("Workers needed: " + building.WorkersRequired);
-                GUILayout.Label("Priority: " + building.WorkPriority);
-                GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Priority -"))
-                    ChangePriority(building.Index, building.WorkPriority - 1);
-                if (GUILayout.Button("Priority +"))
-                    ChangePriority(building.Index, building.WorkPriority + 1);
-                GUILayout.EndHorizontal();
-
-                if (building.Id == BuildingCatalog.CottageId)
-                {
-                    GUILayout.Space(6);
-                    var upgrade = HousingUpgradeCatalog.CottageToTownhouse;
-                    GUILayout.Label("COTTAGE > TOWNHOUSE");
-                    GUILayout.Label("Requires " + upgrade.MinimumPopulation + " residents.");
-                    GUILayout.Label("Cost: " + upgrade.Cost[Resource.Wood] + " wood, " +
-                        upgrade.Cost[Resource.Stone] + " stone, " +
-                        upgrade.Cost[Resource.Coins] + " coins.");
-                    var originalGuiState = GUI.enabled;
-                    var affordable = upgrade.Cost.All(entry =>
-                        snap.Resources.TryGetValue(entry.Key, out var amount) && amount >= entry.Value);
-                    GUI.enabled = originalGuiState && building.IsComplete &&
-                        !building.IsUpgrading && snap.Population >= upgrade.MinimumPopulation && affordable;
-                    if (GUILayout.Button("Upgrade to Townhouse"))
-                    {
-                        if (_session.UpgradeBuilding(building.Index))
-                        {
-                            _message = "Townhouse upgrade started.";
-                            Refresh();
-                        }
-                    }
-                    GUI.enabled = originalGuiState;
-                    if (building.IsUpgrading) GUILayout.Label("Upgrade in progress.");
-                    else if (snap.Population < upgrade.MinimumPopulation)
-                        GUILayout.Label("Need " + (upgrade.MinimumPopulation - snap.Population) + " more residents.");
-                    else if (!affordable) GUILayout.Label("Not enough upgrade resources.");
-                }
-
-                if ((building.Id == BuildingCatalog.MarketplaceId ||
-                    building.Id == BuildingCatalog.TradingHarborId) && building.IsComplete)
-                {
-                    var harbor = building.Id == BuildingCatalog.TradingHarborId;
-                    var capacity = harbor
-                        ? MarketplaceTrading.MaxUnitsPerHarborPerSeason
-                        : MarketplaceTrading.MaxUnitsPerMarketPerSeason;
-                    GUILayout.Space(5);
-                    GUILayout.Label(harbor ? "TRADING HARBOR" : "MARKETPLACE");
-                    GUILayout.Label("Trade quota: " + building.UnitsTradedThisSeason + "/" + capacity +
-                        " units this season");
-                    var quantity = harbor ? 20 : 5;
-                    TradeButtons(Resource.Wood, "Wood", quantity);
-                    TradeButtons(Resource.Stone, "Stone", quantity);
-                    TradeButtons(Resource.Food, "Food", quantity);
-                }
-            }
-
-            if (_lastTurn != null)
-            {
-                GUILayout.Space(9);
-                GUILayout.Label("LAST SEASON");
-                GUILayout.Label("Taxes +" + _lastTurn.TaxIncome +
-                    "  Upkeep -" + _lastTurn.OperatingCosts);
-                GUILayout.Label("Workers " + _lastTurn.WorkingResidents +
-                    " / " + _lastTurn.StartingPopulation);
-                GUILayout.Label("Food shortage " + _lastTurn.FoodShortage);
-            }
-
-        }
-
         private static bool IsCivicHall(string id) =>
             id == BuildingCatalog.VillageHallId || id == BuildingCatalog.TownHallId;
-
-        /// <summary>
-        /// Civic building inspection only. All tax rules, treasury changes and
-        /// upgrade commands remain in the Unity-independent simulation core.
-        /// </summary>
-        private void DrawCivicHallInspector(WorldSnapshot snap, BuildingView hall)
-        {
-            GUILayout.Label(hall.Name.ToUpperInvariant(), _headerStyle);
-            if (!hall.IsComplete)
-                GUILayout.Label("Under construction: " + hall.SeasonsRemaining + " season(s) remaining.");
-            else if (hall.IsUpgrading)
-                GUILayout.Label("Upgrading: " + hall.UpgradeSeasonsRemaining + " season(s) remaining.");
-
-            GUILayout.Space(6);
-            GUILayout.Label("SETTLEMENT");
-            GUILayout.Label("Settlement tier: " + snap.Tier);
-            GUILayout.Label("Residents: " + snap.Population + " / " + snap.HousingCapacity);
-            GUILayout.Label("Available homes: " + Math.Max(0, snap.HousingCapacity - snap.Population));
-            GUILayout.Label("Happiness: " + snap.Happiness + " / 100");
-            GUILayout.Label("Treasury: " + ResourceAmount(snap, Resource.Coins) + " coins");
-            GUILayout.Label("Wood " + ResourceAmount(snap, Resource.Wood) +
-                "  Stone " + ResourceAmount(snap, Resource.Stone) +
-                "  Food " + ResourceAmount(snap, Resource.Food));
-
-            GUILayout.Space(8);
-            GUILayout.Label("TAX POLICY");
-            var currentEffects = TaxationSystem.Effects(snap.TaxPolicy);
-            GUILayout.Label("Current: " + snap.TaxPolicy +
-                "  (happiness " + currentEffects.HappinessPerSeason.ToString("+0;-0;0") +
-                " / season from taxes)");
-            var originalGuiState = GUI.enabled;
-            GUI.enabled = hall.IsComplete;
-            GUILayout.BeginHorizontal();
-            TaxButton(TaxPolicy.Low, "Low", snap.TaxPolicy);
-            TaxButton(TaxPolicy.Normal, "Normal", snap.TaxPolicy);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            TaxButton(TaxPolicy.High, "High", snap.TaxPolicy);
-            TaxButton(TaxPolicy.VeryHigh, "Very high", snap.TaxPolicy);
-            GUILayout.EndHorizontal();
-            GUI.enabled = originalGuiState;
-            GUILayout.Label("Estimated next-season tax income: +" +
-                TaxationSystem.CalculateIncome(snap.Population, snap.TaxPolicy) + " coins");
-            GUILayout.Label("Tax changes apply on the next End Season.");
-
-            GUILayout.Space(8);
-            GUILayout.Label("SEASONAL FINANCES");
-            if (_lastTurn == null)
-            {
-                GUILayout.Label("End a season to see actual operating expenses.");
-            }
-            else
-            {
-                GUILayout.Label("Last season tax revenue: +" + _lastTurn.TaxIncome);
-                GUILayout.Label("Last season operating costs: -" + _lastTurn.OperatingCosts);
-                GUILayout.Label("Operating balance: " +
-                    (_lastTurn.TaxIncome - _lastTurn.OperatingCosts).ToString("+0;-0;0") +
-                    " coins (excluding trade and construction)");
-                GUILayout.Label("Employed: " + _lastTurn.WorkingResidents +
-                    "  Unemployed: " + _lastTurn.UnemployedResidents);
-                GUILayout.Label("Food consumed: " + _lastTurn.FoodConsumed +
-                    "  Shortage: " + _lastTurn.FoodShortage);
-            }
-
-            if (hall.Id != BuildingCatalog.VillageHallId) return;
-
-            GUILayout.Space(10);
-            GUILayout.Label("UPGRADE TO TOWN HALL");
-            var upgrade = CivicUpgradeCatalog.VillageHallToTownHall;
-            GUILayout.Label("Requires " + upgrade.MinimumPopulation + " residents.");
-            GUILayout.Label("Cost: " + upgrade.Cost[Resource.Wood] + " wood, " +
-                upgrade.Cost[Resource.Stone] + " stone, " +
-                upgrade.Cost[Resource.Coins] + " coins.");
-            GUILayout.Label("Duration: " + upgrade.ConstructionSeasons + " seasons.");
-            var canAfford = upgrade.Cost.All(entry =>
-                snap.Resources.TryGetValue(entry.Key, out var value) &&
-                value >= entry.Value);
-            var canUpgrade = hall.IsComplete && !hall.IsUpgrading &&
-                snap.Population >= upgrade.MinimumPopulation && canAfford;
-
-            originalGuiState = GUI.enabled;
-            GUI.enabled = canUpgrade;
-            if (GUILayout.Button("Upgrade Village Hall", GUILayout.Height(28)))
-            {
-                if (_session.UpgradeBuilding(hall.Index))
-                {
-                    _message = "Town Hall upgrade started.";
-                    Refresh();
-                }
-                else
-                    _message = "Upgrade requirements are not met.";
-            }
-            GUI.enabled = originalGuiState;
-            if (hall.IsUpgrading) GUILayout.Label("Upgrade in progress.");
-            else if (snap.Population < upgrade.MinimumPopulation)
-                GUILayout.Label("Need " + (upgrade.MinimumPopulation - snap.Population) +
-                    " more residents.");
-            else if (!canAfford) GUILayout.Label("Not enough construction resources.");
-        }
-
-        private int ResourceAmount(WorldSnapshot snap, Resource resource)
-        {
-            return snap.Resources.TryGetValue(resource, out var count) ? count : 0;
-        }
-
-        private void ToolButton(Tool option, string title, bool unlocked = true)
-        {
-            var oldColor = GUI.backgroundColor;
-            var wasEnabled = GUI.enabled;
-            GUI.enabled = wasEnabled && unlocked;
-            if (_tool == option) GUI.backgroundColor = new Color(.74f, .91f, .7f);
-            if (GUILayout.Button(title, GUILayout.Height(25))) _tool = option;
-            GUI.backgroundColor = oldColor;
-            GUI.enabled = wasEnabled;
-        }
-
-        private void TaxButton(TaxPolicy policy, string title, TaxPolicy current)
-        {
-            var old = GUI.backgroundColor;
-            if (policy == current) GUI.backgroundColor = new Color(.74f, .91f, .7f);
-            if (GUILayout.Button(title))
-            {
-                _session.ChangeTaxes(policy);
-                _message = "Taxation set to " + title + ".";
-                _cachedSnapshot = _session.Snapshot();
-            }
-            GUI.backgroundColor = old;
-        }
 
         private void ChangePriority(int index, int priority)
         {
@@ -729,17 +388,6 @@ namespace LittleEmpires.Unity
             }
             else
                 _message = "Priority must be from -10 to 10.";
-        }
-
-        private void TradeButtons(Resource resource, string title, int units)
-        {
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(title, GUILayout.Width(58));
-            if (GUILayout.Button("Buy " + units))
-                Trade(TradeDirection.Buy, resource, units);
-            if (GUILayout.Button("Sell " + units))
-                Trade(TradeDirection.Sell, resource, units);
-            GUILayout.EndHorizontal();
         }
 
         private void Trade(TradeDirection direction, Resource resource, int units)
