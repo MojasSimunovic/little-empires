@@ -202,9 +202,6 @@ namespace LittleEmpires.Unity
         private void DrawBuilding(BuildingView building)
         {
             var center = WorldPosition(building.Position.Value);
-            if (building.Id == BuildingCatalog.QuarryId)
-                center += new Vector3(0, .48f, 0);
-
             var home = new GameObject(building.Name + " #" + building.Index);
             home.transform.SetParent(_contentRoot, false);
             home.transform.position = center;
@@ -214,10 +211,10 @@ namespace LittleEmpires.Unity
             if (!building.IsComplete)
             {
                 Cube(root, "Construction foundation",
-                    new Vector3(0, .28f, 0), new Vector3(.82f, .19f, .8f),
+                    new Vector3(0, .095f, 0), new Vector3(.82f, .19f, .8f),
                     new Color(.73f, .64f, .45f), false);
                 for (var i = -1; i <= 1; i += 2)
-                    Cube(root, "Scaffolding", new Vector3(i * .34f, .65f, .36f),
+                    Cube(root, "Scaffolding", new Vector3(i * .34f, .52f, .36f),
                         new Vector3(.06f, .85f, .06f), new Color(.48f, .31f, .18f), false);
                 return;
             }
@@ -259,14 +256,19 @@ namespace LittleEmpires.Unity
                         new Vector3(.17f, .48f, .18f), new Color(.64f, .58f, .48f), false);
                     break;
                 case BuildingCatalog.FisheryId:
+                    // The procedural cottage's walls start at y=.23 local units.
+                    // Give them a real plinth, rather than leaving a gap above terrain.
+                    Cube(root, "Shoreline foundation",
+                        new Vector3(0, .115f, 0), new Vector3(.8f, .23f, .8f),
+                        new Color(.63f, .59f, .50f), false);
                     House(root, false, .72f);
                     Cube(root, "Fishing pier", new Vector3(.36f, .26f, 0),
                         new Vector3(.45f, .12f, .36f), new Color(.54f, .37f, .24f), false);
                     break;
                 case BuildingCatalog.QuarryId:
-                    Cube(root, "Mine shed", new Vector3(0, .38f, 0),
+                    Cube(root, "Mine shed", new Vector3(0, .25f, 0),
                         new Vector3(.6f, .5f, .6f), new Color(.52f, .37f, .25f), false);
-                    Cube(root, "Rock stacks", new Vector3(-.24f, .14f, -.26f),
+                    Cube(root, "Rock stacks", new Vector3(-.24f, .125f, -.26f),
                         new Vector3(.33f, .25f, .32f), new Color(.67f, .67f, .64f), false);
                     break;
                 case BuildingCatalog.FoodProcessorId:
