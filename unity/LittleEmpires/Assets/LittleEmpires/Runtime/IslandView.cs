@@ -100,6 +100,9 @@ namespace LittleEmpires.Unity
                 Cube(_selection.transform, "Edge", new Vector3(0, 0, side * .47f),
                     new Vector3(.9f, .015f, .035f), marker, false);
             }
+            // Selection should outline an entire logical plot (6 world units on LargeIsland).
+            if (LargeTerrain != null)
+                _selection.transform.localScale = Vector3.one * LargeTerrain.CellSize;
             _selection.SetActive(false);
         }
 
