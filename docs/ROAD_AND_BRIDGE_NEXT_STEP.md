@@ -1,6 +1,6 @@
 # Little Empires — next Unity milestone: drag-to-build roads and automatic bridges
 
-**Status:** implementation brief, not yet implemented.  
+**Status:** historical implementation brief. Road drag and bridge code has since been implemented; check `docs/STATUS.md` for outstanding Play Mode verification and bugs.  
 **References:** [#43 — Drag-to-build roads](https://github.com/MojasSimunovic/little-empires/issues/43); [#44 — Automatic bridges](https://github.com/MojasSimunovic/little-empires/issues/44); [#41 — Flat city island, corner mountain and river](https://github.com/MojasSimunovic/little-empires/issues/41).
 
 ## Product decision
