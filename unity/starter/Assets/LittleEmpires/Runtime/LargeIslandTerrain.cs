@@ -11,13 +11,29 @@ namespace LittleEmpires.Unity
         private int _width, _depth;
         private float[,] _elevations;
 
-        public void UseAuthoredSurface(Terrain terrain)
+        public float SeaLevel { get; private set; } = -4f;
+
+        public void UseAuthoredSurface(Terrain terrain, WorldSnapshot snapshot, float seaLevel)
         {
             Surface = terrain;
-            _width = _depth = 64;
+            SeaLevel = seaLevel;
+            ReadGrid(snapshot);
         }
 
-        public void Build(WorldSnapshot snapshot)
+        public bool IsOcean(GridPosition plot) =>
+            plot.X >= 0 && plot.X < _width && plot.Z >= 0 && plot.Z < _depth &&
+            _kinds[plot.X, plot.Z] == TerrainKind.Water;
+
+        public bool IsOceanAt(Vector3 point)
+        {
+            var local = point - Surface.transform.position;
+            return IsOcean(new GridPosition(Mathf.FloorToInt(local.x / CellSize),
+                Mathf.FloorToInt(local.z / CellSize)));
+        }
+
+        public float GroundHeight(Vector3 point) => Surface.SampleHeight(point) + Surface.transform.position.y;
+
+        private void ReadGrid(WorldSnapshot snapshot)
         {
             foreach (var tile in snapshot.Terrain)
             {
@@ -25,7 +41,13 @@ namespace LittleEmpires.Unity
                 _depth = Mathf.Max(_depth, tile.Position.Z + 1);
             }
             _kinds = new TerrainKind[_width, _depth];
-            foreach (var tile in snapshot.Terrain) _kinds[tile.Position.X, tile.Position.Z] = tile.Terrain;
+            foreach (var tile in snapshot.Terrain)
+                _kinds[tile.Position.X, tile.Position.Z] = tile.Terrain;
+        }
+
+        public void Build(WorldSnapshot snapshot)
+        {
+            ReadGrid(snapshot);
             if (_width != 64 || _depth != 64)
             {
                 _elevations = new float[_width, _depth];
@@ -97,7 +119,7 @@ namespace LittleEmpires.Unity
             ocean.name = "Ocean";
             ocean.transform.SetParent(transform,false);
             ocean.transform.localScale = Vector3.one * (_width*CellSize);
-            ocean.transform.position = Vector3.up * -4;
+            ocean.transform.position = Vector3.up * SeaLevel;
             Destroy(ocean.GetComponent<Collider>());
             var water = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             water.color = new Color(.20f,.47f,.51f);
@@ -170,7 +192,7 @@ namespace LittleEmpires.Unity
         public Vector3 Position(GridPosition plot)
         {
             var point = new Vector3((plot.X+.5f-_width/2f)*CellSize,0,(plot.Z+.5f-_depth/2f)*CellSize);
-            point.y = Surface.SampleHeight(point) + Surface.transform.position.y;
+            point.y = GroundHeight(point);
             return point;
         }
 

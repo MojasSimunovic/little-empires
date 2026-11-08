@@ -138,7 +138,7 @@ namespace LittleEmpires.Unity
                 _view.LargeTerrain = visualRoot.AddComponent<LargeIslandTerrain>();
                 _view.LargeTerrain.CellSize = cellSize;
                 if (authoredTerrain != null)
-                    _view.LargeTerrain.UseAuthoredSurface(authoredTerrain);
+                    _view.LargeTerrain.UseAuthoredSurface(authoredTerrain, snapshot, authoredSeaLevel);
                 else
                     _view.LargeTerrain.Build(snapshot);
             }

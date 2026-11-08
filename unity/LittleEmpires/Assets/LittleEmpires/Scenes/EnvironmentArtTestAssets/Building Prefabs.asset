@@ -19,6 +19,14 @@ MonoBehaviour:
     Prefab: {fileID: 1236906268829302300, guid: d3c3ed7648577fe44871e7cfe474b1d8, type: 3}
   - BuildingId: town-hall
     Prefab: {fileID: 8804631167709551779, guid: 698fda17574c13d47b91b484ee0039a0, type: 3}
+  - BuildingId: lumber-camp
+    Prefab: {fileID: 3856079034950631481, guid: d810c15562fe18f48a2577a4201edc57, type: 3}
+  - BuildingId: quarry
+    Prefab: {fileID: 1214416140398636295, guid: 9a1a399a3e5c823498ea79e4ede1f81c, type: 3}
+  - BuildingId: farm
+    Prefab: {fileID: 8570562653779760041, guid: 99aba2015c8ecde41962060d118bfb21, type: 3}
+  - BuildingId: fishery
+    Prefab: {fileID: 8538012068006454428, guid: 1c2fa8b78cfe7f94aad1d7818a835f5e, type: 3}
   cottages:
   - {fileID: 3325131485386816289, guid: ae99ddaf78fa45d4d8b80803795f5361, type: 3}
   - {fileID: 5583305845795246860, guid: 3047d763f81ef6247a955946b4d44361, type: 3}
@@ -31,3 +39,6 @@ MonoBehaviour:
   - {fileID: 1873464601189816199, guid: 365a2eaed2e27b448865053b6ca5f456, type: 3}
   - {fileID: 7815378171270486625, guid: beeaee12e06a0eb4e8a8b9c43195b013, type: 3}
   - {fileID: 7183005018773385874, guid: 004f144adbca98945afbd364073094a9, type: 3}
+  farms:
+  - {fileID: 8570562653779760041, guid: 99aba2015c8ecde41962060d118bfb21, type: 3}
+  - {fileID: 6983948760897779464, guid: 75851c6174d940a48a5a078f18ad4e39, type: 3}

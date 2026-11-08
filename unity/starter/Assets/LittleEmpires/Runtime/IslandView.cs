@@ -215,12 +215,14 @@ namespace LittleEmpires.Unity
         {
             var seen = new HashSet<int>();
             var housingCount = 0;
+            var farmCount = 0;
             foreach (var building in state.Buildings)
             {
                 // Snapshots retain settlement order, including the same entry after an upgrade.
                 var isHousing = building.Id == BuildingCatalog.CottageId ||
                     building.Id == BuildingCatalog.TownhouseId;
-                var variant = isHousing ? housingCount++ % BuildingPrefabRegistry.HousingVariantCount : 0;
+                var variant = isHousing ? housingCount++ % BuildingPrefabRegistry.HousingVariantCount :
+                    building.Id == BuildingCatalog.FarmId ? farmCount++ % BuildingPrefabRegistry.FarmVariantCount : 0;
                 if (!building.Position.HasValue) continue;
                 seen.Add(building.Index);
                 var p = building.Position.Value;
@@ -282,6 +284,9 @@ namespace LittleEmpires.Unity
                 visual.transform.localPosition = Vector3.zero;
                 visual.transform.localRotation = Quaternion.identity;
                 visual.transform.localScale = Vector3.one / root.localScale.x;
+                if (LargeTerrain != null && building.Id == BuildingCatalog.FisheryId &&
+                    visual.TryGetComponent<FisheryWaterfront>(out var waterfront))
+                    waterfront.AlignToShore(LargeTerrain, building.Position.Value);
                 foreach (var collider in visual.GetComponentsInChildren<Collider>())
                     collider.enabled = false;
                 return home;
