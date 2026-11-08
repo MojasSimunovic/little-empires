@@ -14,7 +14,10 @@ namespace LittleEmpires.Unity
             var triangles = new int[steps*6];
             for (var i=0;i<=steps;i++)
             {
-                var z = (float)IslandRiver.MouthZ + i/(float)steps * ((float)IslandRiver.SourceZ - IslandRiver.MouthZ);
+                // Extend halfway into end plots so river-classified tiles are visibly wet.
+                var startZ = (float)IslandRiver.MouthZ - .45f;
+                var endZ = (float)IslandRiver.SourceZ + .45f;
+                var z = Mathf.Lerp(startZ, endZ, i/(float)steps);
                 var x = (float)IslandRiver.VisualCenterX(z);
                 var y = (float)IslandRiver.WaterElevation(x,z)-8;
                 for (var side=0;side<2;side++)
