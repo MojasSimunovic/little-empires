@@ -90,8 +90,8 @@ catch (ArgumentOutOfRangeException)
 
 
 var definitions = BuildingCatalog.All;
-Check(definitions.Count == 11, "Catalogue includes residential, civic and production buildings");
-Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 11,
+Check(definitions.Count == 13, "Catalogue includes Village and Town industry buildings");
+Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 13,
     "Every catalogue building has a unique ID");
 foreach (var definition in definitions)
 {
@@ -99,7 +99,8 @@ foreach (var definition in definitions)
     Check((definition.ProductionPerSeason.Count > 0 || definition.HousingCapacity > 0 ||
           definition.Id is BuildingCatalog.LumberMillId or
               BuildingCatalog.FoodProcessorId or BuildingCatalog.MarketplaceId or
-              BuildingCatalog.VillageHallId or BuildingCatalog.TownHallId) &&
+              BuildingCatalog.VillageHallId or BuildingCatalog.TownHallId or
+              BuildingCatalog.StoneworksId or BuildingCatalog.TradingHarborId) &&
           definition.ConstructionSeasons >= 1, $"{definition.Name} definition is valid");
 }
 Check(BuildingCatalog.TryGet("FARM", out var selectedFarm) &&
@@ -776,6 +777,7 @@ Check(diagonalIsland.Roads.PlaceDirt(new GridPosition(0, 1)).Succeeded &&
 
 StrategicEconomyTests.Run(Check);
 CivicHallTests.Run(Check);
+TownProgressionTests.Run(Check);
 LargeIslandFoundationChecks.Run(Check);
 
 Console.WriteLine("All smoke tests passed.");
