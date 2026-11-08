@@ -27,7 +27,8 @@ public enum PlacementFailure
     RequiresFertileLand,
     RequiresMountain,
     RequiresForestNearby,
-    RequiresShoreline
+    RequiresShoreline,
+    RequiresLevelSite
 }
 
 public readonly struct PlacementResult
@@ -87,6 +88,14 @@ public static class BuildingPlacementRules
             _ => throw new ArgumentOutOfRangeException(
                 nameof(definition), "Unknown building placement requirement.")
         };
+
+        // A terrain type alone does not guarantee a level physical foundation.
+        // The real 64x64 Unity island has slopes at the coast and mountain;
+        // reject those plots instead of floating a building from its center height.
+        if (failure == PlacementFailure.None && island.Width == 64 && island.Height == 64 &&
+            LargeIslandGeography.BuildingFootprintRelief(position) >
+                LargeIslandGeography.MaximumBuildingRelief)
+            return new PlacementResult(PlacementFailure.RequiresLevelSite);
 
         return new PlacementResult(failure);
     }
