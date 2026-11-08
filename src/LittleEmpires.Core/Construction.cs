@@ -99,6 +99,14 @@ public sealed class Settlement
             .Sum(building => building.Definition.HousingCapacity));
     public int AvailableHousing => Math.Max(0, HousingCapacity - Population);
 
+    private bool HasCivicHall => _buildings.Any(building =>
+        building.Definition.Id == BuildingCatalog.VillageHallId ||
+        building.Definition.Id == BuildingCatalog.TownHallId);
+
+    private bool WouldDuplicateCivicHall(BuildingDefinition definition) =>
+        (definition.Id == BuildingCatalog.VillageHallId ||
+         definition.Id == BuildingCatalog.TownHallId) && HasCivicHall;
+
     public Settlement(int population = 0, int happiness = 70,
         EconomyMode economyMode = EconomyMode.Classic)
     {
@@ -166,6 +174,8 @@ public sealed class Settlement
 
         var definition = BuildingCatalog.Get(buildingId);
         definition.Validate();
+        if (!definition.CanBuildDirectly || WouldDuplicateCivicHall(definition))
+            return false;
         if (!BuildingPlacementRules.Evaluate(island, position, definition).Allowed)
             return false;
         if (!state.TrySpend(definition.Cost))
@@ -188,13 +198,14 @@ public sealed class Settlement
         if (state == null) throw new ArgumentNullException(nameof(state));
         if (definition == null) throw new ArgumentNullException(nameof(definition));
         definition.Validate();
-        if (!definition.CanBuildDirectly || !state.TrySpend(definition.Cost)) return false;
+        if (!definition.CanBuildDirectly || WouldDuplicateCivicHall(definition) ||
+            !state.TrySpend(definition.Cost)) return false;
         _buildings.Add(new Building(definition));
         return true;
     }
 
     /// <summary>
-    /// Upgrade a completed housing building by its index in Buildings.
+    /// Upgrade a completed building by its index in Buildings.
     /// Indices remain stable until building removal is introduced.
     /// </summary>
     public bool TryStartUpgrade(GameState state, int buildingIndex)
@@ -204,10 +215,11 @@ public sealed class Settlement
 
         var building = _buildings[buildingIndex];
         if (!building.IsComplete || building.IsUpgrading ||
-            !HousingUpgradeCatalog.TryGet(building.Definition.Id, out var upgrade))
+            !BuildingUpgradeCatalog.TryGet(building.Definition.Id, out var upgrade))
             return false;
 
         upgrade!.Validate();
+        if (Population < upgrade.MinimumPopulation) return false;
         if (!state.TrySpend(upgrade.Cost)) return false;
         building.StartUpgrade(upgrade);
         return true;

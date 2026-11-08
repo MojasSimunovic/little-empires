@@ -19,6 +19,8 @@ public static class BuildingCatalog
     public const string FarmId = "farm";
     public const string CottageId = "cottage";
     public const string TownhouseId = "townhouse";
+    public const string VillageHallId = "village-hall";
+    public const string TownHallId = "town-hall";
     public const string LumberMillId = "lumber-mill";
     public const string FoodProcessorId = "food-processor";
     public const string MarketplaceId = "marketplace";
@@ -55,6 +57,14 @@ public static class BuildingCatalog
             new BuildingDefinition(
                 TownhouseId, "Townhouse", Map(), 1, Map(),
                 HousingCapacity: 12, CanBuildDirectly: false),
+            // The Town Hall is upgrade-only, and neither civic building adds housing.
+            new BuildingDefinition(
+                VillageHallId, "Village Hall",
+                Map((Resource.Wood, 35), (Resource.Stone, 15), (Resource.Coins, 30)),
+                1, Map()),
+            new BuildingDefinition(
+                TownHallId, "Town Hall", Map(), 1, Map(),
+                CanBuildDirectly: false),
             new BuildingDefinition(
                 LumberMillId, "Lumber Mill",
                 Map((Resource.Wood, 35), (Resource.Stone, 15), (Resource.Coins, 30)),

@@ -90,15 +90,16 @@ catch (ArgumentOutOfRangeException)
 
 
 var definitions = BuildingCatalog.All;
-Check(definitions.Count == 9, "Catalogue contains four producers, housing, processors and Marketplace");
-Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 9,
+Check(definitions.Count == 11, "Catalogue includes residential, civic and production buildings");
+Check(definitions.Select(building => building.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 11,
     "Every catalogue building has a unique ID");
 foreach (var definition in definitions)
 {
     definition.Validate();
     Check((definition.ProductionPerSeason.Count > 0 || definition.HousingCapacity > 0 ||
           definition.Id is BuildingCatalog.LumberMillId or
-              BuildingCatalog.FoodProcessorId or BuildingCatalog.MarketplaceId) &&
+              BuildingCatalog.FoodProcessorId or BuildingCatalog.MarketplaceId or
+              BuildingCatalog.VillageHallId or BuildingCatalog.TownHallId) &&
           definition.ConstructionSeasons >= 1, $"{definition.Name} definition is valid");
 }
 Check(BuildingCatalog.TryGet("FARM", out var selectedFarm) &&
@@ -774,6 +775,7 @@ Check(diagonalIsland.Roads.PlaceDirt(new GridPosition(0, 1)).Succeeded &&
     "Orthogonal connector closes a diagonal gap");
 
 StrategicEconomyTests.Run(Check);
+CivicHallTests.Run(Check);
 LargeIslandFoundationChecks.Run(Check);
 
 Console.WriteLine("All smoke tests passed.");
